@@ -46,8 +46,18 @@ async def set_status(interaction: discord.Interaction, statustype: Literal['watc
 @bot.event
 async def on_member_join(member):
     if str(member.id) in blacklisted_users:
-        kick_delay = random.randint(300, 86400)
+
+        kick_delay = random.randint(300, 43200)
+        hours, remainder = divmod(kick_delay, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        channel = bot.get_channel(1082280060016410696)
+        kick_msg = f'{member.display_name} will be kicked in {hours} hours and {minutes} minutes.'
+
+        await channel.send(kick_msg)
+
         print(f"kicking in {kick_delay/60} minutes")
+
         await asyncio.sleep(kick_delay)
         await member.kick(reason="womp womp")
 
