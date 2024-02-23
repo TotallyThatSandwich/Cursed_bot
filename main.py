@@ -52,7 +52,7 @@ async def on_member_join(member):
         minutes, seconds = divmod(remainder, 60)
 
         channel = bot.get_channel(1024094820706287697)
-        kick_msg = f'{member.display_name} will be kicked in {hours} hours and {minutes} minutes.'
+        kick_msg = f'{member.mention} will be kicked in {hours} hours and {minutes} minutes.'
 
         await channel.send(kick_msg)
 
