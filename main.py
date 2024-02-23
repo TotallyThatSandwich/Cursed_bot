@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from typing import Literal
 import asyncio
 import random
+import requests
 
 load_dotenv()
 token = os.getenv("TOKEN") 
@@ -60,6 +61,16 @@ async def on_member_join(member):
 
         await asyncio.sleep(kick_delay)
         await member.kick(reason="womp womp")
+
+## Retrieve new GCGS video
+URL = "GET https://www.googleapis.com/youtube/v3/channels"
+channelID = "UCG6DkyglRHZxtTP65FDgj1w"
+fetchParameters = [
+    "?part=contentDetails",
+    f"&id={channelID}"]
+
+request = URL+"".join(fetchParameters)
+request.execute()
 
 
 bot.run(token)
