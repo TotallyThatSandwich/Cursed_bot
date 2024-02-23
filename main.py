@@ -4,6 +4,10 @@ from discord import app_commands
 import os
 from dotenv import load_dotenv
 from typing import Literal
+import asyncio
+import random
+
+blacklisted_users = ['695852014961164300']
 
 load_dotenv()
 token = os.getenv("TOKEN") 
@@ -24,6 +28,8 @@ async def on_ready():
     except Exception as e:
         print(e)
 
+
+## set status command
 @bot.tree.command(name="set_status")
 @app_commands.describe(statustext = "what should my status say?")
 async def set_status(interaction: discord.Interaction, statustype: Literal['watching', 'playing'] , statustext: str):
@@ -35,6 +41,15 @@ async def set_status(interaction: discord.Interaction, statustype: Literal['watc
         await interaction.response.send_message(f"status set to {statustype} {statustext}", ephemeral=True)
     except:
         await interaction.response.send_message(f"faild to set status", ephemeral=True)
+
+## kick kosta command
+@bot.event
+async def on_member_join(member):
+    if str(member.id) in blacklisted_users:
+        kick_delay = random.randint(300, 86400)
+        print(f"kicking in {kick_delay/60} minutes")
+        await asyncio.sleep(kick_delay)
+        await member.kick(reason="womp womp")
 
 
 bot.run(token)
