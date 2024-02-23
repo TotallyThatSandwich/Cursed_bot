@@ -1,11 +1,6 @@
-import os
-
-import environ
 import discord
 
-env = environ.Env()
-env.read_env()
-BOT_TOKEN = env('BOT_TOKEN')
+BOT_TOKEN = "MTIxMDM4OTM2NTE4NTA1NjgxOA.Grr2xY.8CRZvBFbxjbCqt7kfk-Jty1au5ntPkBorOLndQ"
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -23,7 +18,6 @@ async def on_message(message):
 
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
-
 
 
 client.run(BOT_TOKEN)
