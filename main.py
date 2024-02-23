@@ -1,6 +1,10 @@
 import discord
+import os
+from dotenv import load_dotenv
 
-BOT_TOKEN = "MTIxMDM4OTM2NTE4NTA1NjgxOA.Grr2xY.8CRZvBFbxjbCqt7kfk-Jty1au5ntPkBorOLndQ"
+load_dotenv()
+token = os.getenv("TOKEN") 
+print(token)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -20,4 +24,4 @@ async def on_message(message):
         await message.channel.send('Hello!')
 
 
-client.run(BOT_TOKEN)
+client.run(token)
