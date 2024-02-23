@@ -7,10 +7,10 @@ from typing import Literal
 import asyncio
 import random
 
-blacklisted_users = ['695852014961164300']
-
 load_dotenv()
 token = os.getenv("TOKEN") 
+blacklisted_users = os.getenv("BLACKLIST")
+general_channel = os.getenv("GENERAL")
 
 intents = discord.Intents.default()
 intents.members = True
@@ -51,7 +51,7 @@ async def on_member_join(member):
         hours, remainder = divmod(kick_delay, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        channel = bot.get_channel(1024094820706287697)
+        channel = bot.get_channel(general_channel)
         kick_msg = f'{member.mention} will be kicked in {hours} hours and {minutes} minutes.'
 
         await channel.send(kick_msg)
