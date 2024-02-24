@@ -31,9 +31,4 @@ async def on_ready():
 
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
-@bot.command(name="sync") 
-async def sync(ctx):
-    synced = await bot.tree.sync()
-    print(f"Synced {len(synced)} command(s).")
-
 bot.run(token)
