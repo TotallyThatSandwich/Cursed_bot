@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 from typing import Literal
 import asyncio
 import random
+
 import requests
+import googleapiclient
 
 load_dotenv()
 token = os.getenv("TOKEN") 
@@ -63,14 +65,23 @@ async def on_member_join(member):
         await member.kick(reason="womp womp")
 
 ## Retrieve new GCGS video
-URL = "GET https://www.googleapis.com/youtube/v3/channels"
-channelID = "UCG6DkyglRHZxtTP65FDgj1w"
-fetchParameters = [
-    "?part=contentDetails",
-    f"&id={channelID}"]
+async def retrieveNewestGCGSVideo():
+    URL = "GET https://www.googleapis.com/youtube/v3/channels"
+    channelID = "UCG6DkyglRHZxtTP65FDgj1w"
+    youtubeAPIkey = os.getenv("GOOGLEAPI")
+    fetchParameters = [
+        "?part=contentDetails",
+        f"&id={channelID}",
+        f"&key={youtubeAPIkey}"]
 
-request = URL+"".join(fetchParameters)
-request.execute()
+    response = await requests.get(url= URL, params="".join(fetchParameters))
+    response.json()
+    print(response)
+
+@bot.tree.command(name="Get GCGSYTC latest video")
+async def getLatestVideo(interaction: discord.Interaction):
+    retrieveNewestGCGSVideo()
+
 
 
 bot.run(token)
