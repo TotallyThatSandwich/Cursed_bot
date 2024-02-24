@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+
 import os
 from dotenv import load_dotenv
 from typing import Literal
@@ -10,10 +11,13 @@ import random
 import requests
 import googleapiclient
 
+import json
+
 load_dotenv()
 token = os.getenv("TOKEN") 
 blacklisted_users = os.getenv("BLACKLIST")
 general_channel = os.getenv("GENERAL")
+gcytc_channel = os.getenv("GCYTC")
 
 intents = discord.Intents.default()
 intents.members = True
@@ -58,21 +62,46 @@ async def on_member_join(member):
 
 ## Retrieve new GCGS video
 async def retrieveNewestGCGSVideo():
-    URL = "GET https://www.googleapis.com/youtube/v3/channels"
+    URL = "https://www.googleapis.com/youtube/v3/channels"
     channelID = "UCG6DkyglRHZxtTP65FDgj1w"
     youtubeAPIkey = os.getenv("GOOGLEAPI")
-    fetchParameters = [
-        "?part=contentDetails",
-        f"&id={channelID}",
-        f"&key={youtubeAPIkey}"]
+    fetchParameters = {
+         "part":"contentDetails",
+         "id": channelID,
+         "key": youtubeAPIkey}
 
-    response = await requests.get(url= URL, params="".join(fetchParameters))
-    response.json()
-    print(response)
+    response = requests.get(url= URL, params=fetchParameters)
+    response = response.json()
+    
+    playlistID = response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
-@bot.tree.command(name="Get GCGSYTC latest video")
+    URL = "https://www.googleapis.com/youtube/v3/playlistItems"
+    fetchParameters = {
+        "part": "contentDetails",
+        "playlistId": playlistID,
+        "maxResults": 1,
+        "key": youtubeAPIkey
+    }
+
+    response = requests.get(url=URL, params=fetchParameters)
+    response = response.json()
+    
+
+    videoID = response["items"][0]["contentDetails"]["videoId"]
+
+    return "https://www.youtube.com/watch?v=" + videoID
+
+
+@bot.tree.command(name="latest_video")
 async def getLatestVideo(interaction: discord.Interaction):
-    retrieveNewestGCGSVideo()
+    video = await retrieveNewestGCGSVideo()
+    
+    try:
+        channel = bot.get_channel(gcytc_channel)
+        await channel.send(video)
+    except Exception as e:
+        print(e)
+        await interaction.response.send_message(video)
 
 
 
