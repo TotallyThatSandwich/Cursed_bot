@@ -24,26 +24,18 @@ bot = commands.Bot(command_prefix='?', intents=intents)
 @bot.event
 async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name="Hazbin Hotel"))
-    print(f'Logged in as {bot.user} (ID: {bot.user.id})')
+
+    for cog_file in os.listdir('./cogs'):
+            if cog_file.endswith(".py"):
+                await bot.load_extension(f"cogs.{cog_file[:-3]}")
+    
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
 
-
-## set status command
-@bot.tree.command(name="set_status")
-@app_commands.describe(statustext = "what should my status say?")
-async def set_status(interaction: discord.Interaction, statustype: Literal['watching', 'playing'] , statustext: str):
-    try:
-        if statustype == 'watching':
-            await bot.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name=statustext))
-        else:
-            await bot.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.playing, name=statustext))
-        await interaction.response.send_message(f"status set to {statustype} {statustext}", ephemeral=True)
-    except:
-        await interaction.response.send_message(f"faild to set status", ephemeral=True)
+    print(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
 ## kick kosta command
 @bot.event
