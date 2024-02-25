@@ -80,24 +80,20 @@ class GCYT(commands.Cog):
         
         if video != None:
             try:
-                channel = self.bot.get_channel(int(settings.GCYTC))
-                await channel.send(video)
+                await interaction.response.send_message(video)
 
             except Exception as e:
                 logger.info(e)
-                await interaction.response.send_message(video)
 
         else:
             videoID = await self.read_saved_video_id()
             video = "https://www.youtube.com/watch?v=" + videoID
 
             try:
-                channel = self.bot.get_channel(int(settings.GCYTC))
-                await channel.send(video)
+                await interaction.response.send_message(video)
 
             except Exception as e:
                 logger.info(e)
-                await interaction.response.send_message(video)
 
 async def setup(bot):
     await bot.add_cog(GCYT(bot))
