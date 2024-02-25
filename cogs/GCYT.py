@@ -17,7 +17,7 @@ class GCYT(commands.Cog):
         self.bot = bot
         self.retrieve_videos.start()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(hours=1)
     async def retrieve_videos(self):
         video = await self.retrieveNewestGCGSVideo()
         if video != None:
@@ -78,7 +78,7 @@ class GCYT(commands.Cog):
         except FileNotFoundError:
             return None
         
-    #@app_commands.command(name="latest_video", description="Get latest GCGS youtube video")
+    @app_commands.command(name="latest_video", description="Get latest GCGS youtube video")
     async def getLatestVideo(self, interaction: discord.Interaction):
         video = await self.retrieveNewestGCGSVideo()
         
