@@ -8,8 +8,8 @@ class Ststus(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="set_status")
-    @app_commands.describe(statustext = "what should my status say?")
+    @app_commands.command(name="set_status", description="Set bots custom status")
+    @app_commands.describe(statustext = "What should my status say?")
     async def set_status(self, interaction: discord.Interaction, statustype: Literal['watching', 'playing'] , statustext: str):
         try:
             if statustype == 'watching':

@@ -62,7 +62,7 @@ async def retrieveNewestGCGSVideo():
     return "https://www.youtube.com/watch?v=" + videoID
 
 
-@bot.tree.command(name="latest_video")
+@bot.tree.command(name="latest_video", description="Get latest GCGS youtube video")
 async def getLatestVideo(interaction: discord.Interaction):
     video = await retrieveNewestGCGSVideo()
     
