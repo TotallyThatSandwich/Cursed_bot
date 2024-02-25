@@ -17,10 +17,7 @@ class Kosta(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_member_join(member, self):
-
-        #logger.info(f"blacklist: {settings.BLACKLIST}")
-        #logger.info(f"channel: {self.bot.get_channel(settings.GENERAL)}")
+    async def on_member_join(self, member):
 
         if str(member.id) in settings.BLACKLIST:
 
@@ -28,12 +25,12 @@ class Kosta(commands.Cog):
             hours, remainder = divmod(kick_delay, 3600)
             minutes, seconds = divmod(remainder, 60)
 
-            channel = self.bot.get_channel(settings.GENERAL)
+            channel = self.bot.get_channel(int(settings.GENERAL))
             kick_msg = f'{member.mention} will be kicked in {hours} hours and {minutes} minutes.'
 
             await channel.send(kick_msg)
 
-            print(f"kicking in {kick_delay/60} minutes")
+            print(f"{member.name} will be kicked in {hours} hours and {minutes} minutes.'")
 
             await asyncio.sleep(kick_delay)
             await member.kick(reason="womp womp")
