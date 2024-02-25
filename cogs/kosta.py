@@ -3,8 +3,11 @@ from discord.ext import commands
 import os
 import random
 import asyncio
+import sys
 
-import settings
+sys.path.append(os.path.abspath("../"))
+
+import settings as settings
 
 logger = settings.logging.getLogger("bot")
 
