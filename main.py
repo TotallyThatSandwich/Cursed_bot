@@ -67,7 +67,7 @@ async def getLatestVideo(interaction: discord.Interaction):
     video = await retrieveNewestGCGSVideo()
     
     try:
-        channel = bot.get_channel(settings.GCYTC)
+        channel = bot.get_channel(int(settings.GCYTC))
         await channel.send(video)
     except Exception as e:
         logger.info(e)
