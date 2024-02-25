@@ -5,6 +5,7 @@ import asyncio
 import random
 import requests
 import settings
+import aiofiles
 
 logger = settings.logging.getLogger("bot")
 
@@ -55,23 +56,53 @@ async def retrieveNewestGCGSVideo():
 
     response = requests.get(url=URL, params=fetchParameters)
     response = response.json()
-    
 
     videoID = response["items"][0]["contentDetails"]["videoId"]
 
-    return "https://www.youtube.com/watch?v=" + videoID
+    saved_video_id = await read_saved_video_id()  # Function to read saved video ID
+    if videoID != saved_video_id:
+        await save_video_id(videoID)  # Function to save the latest video ID
+        return "https://www.youtube.com/watch?v=" + videoID
+    else:
+        return None  # No new video
+    
 
+async def save_video_id(video_id):
+    async with aiofiles.open("latest_video_id.txt", "w") as f:
+        await f.write(video_id)
+
+async def read_saved_video_id():
+    try:
+        async with aiofiles.open("latest_video_id.txt", "r") as f:
+            return (await f.read()).strip()
+    except FileNotFoundError:
+        return None
 
 @bot.tree.command(name="latest_video", description="Get latest GCGS youtube video")
 async def getLatestVideo(interaction: discord.Interaction):
-    video = await retrieveNewestGCGSVideo()
+    video = await retrieveNewestGCGSVideo()\
     
-    try:
-        channel = bot.get_channel(int(settings.GCYTC))
-        await channel.send(video)
-    except Exception as e:
-        logger.info(e)
-        await interaction.response.send_message(video)
+    if video != None:
+        try:
+            channel = bot.get_channel(int(settings.GCYTC))
+            await channel.send(video)
+
+        except Exception as e:
+            logger.info(e)
+            await interaction.response.send_message(video)
+
+    else:
+        videoID = await read_saved_video_id()
+        video = "https://www.youtube.com/watch?v=" + videoID
+
+        try:
+            channel = bot.get_channel(int(settings.GCYTC))
+            await channel.send(video)
+            
+        except Exception as e:
+            logger.info(e)
+            await interaction.response.send_message(video)
+        
 
 
 
