@@ -27,11 +27,7 @@ class GCYT(commands.Cog):
             except Exception as e:
                 logger.info(e)
         else:
-            try:
-                channel = self.bot.get_channel(int(settings.GCYTC))
-                await channel.send("no new videos")
-            except Exception as e:
-                logger.info(e)
+            logger.info("no new videos")
 
     async def retrieveNewestGCGSVideo(self):
         URL = "https://www.googleapis.com/youtube/v3/channels"
