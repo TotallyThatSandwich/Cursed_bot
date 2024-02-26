@@ -29,14 +29,35 @@ async def on_ready():
         
 @bot.command()
 async def reload(ctx, cog: str):
-     await bot.reload_extension(f"cogs.{cog.lower()}")
+    if f"{cog}.py" in os.listdir('./cogs'):
+        try:
+            await bot.reload_extension(f"cogs.{cog.lower()}")
+            await ctx.send(f"reloaded {cog}")
+        except:
+            await ctx.send(f"an error ocured")
+    else:
+        await ctx.send(f"no cog exists named {cog}")
 
 @bot.command()
 async def load(ctx, cog: str):
-     await bot.load_extension(f"cogs.{cog.lower()}")
+    if f"{cog}.py" in os.listdir('./cogs'):
+        try:
+            await bot.load_extension(f"cogs.{cog.lower()}")
+            await ctx.send(f"reloaded {cog}")
+        except:
+            await ctx.send(f"an error ocured")
+    else:
+        await ctx.send(f"no cog exists named {cog}")
 
 @bot.command()
 async def unload(ctx, cog: str):
-     await bot.unload_extension(f"cogs.{cog.lower()}")
+    if f"{cog}.py" in os.listdir('./cogs'):
+        try:
+            await bot.unload_extension(f"cogs.{cog.lower()}")
+            await ctx.send(f"reloaded {cog}")
+        except:
+            await ctx.send(f"an error ocured")
+    else:
+        await ctx.send(f"no cog exists named {cog}")
      
 bot.run(settings.TOKEN, root_logger=True)
