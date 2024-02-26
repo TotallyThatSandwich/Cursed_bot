@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from logging.config import dictConfig
 import logging
 import os
+import json
 
 load_dotenv()
 
@@ -9,6 +10,7 @@ TOKEN = os.getenv("TOKEN")
 BLACKLIST = os.getenv("BLACKLIST")
 GENERAL = os.getenv("GENERAL")
 GCYTC = os.getenv("GCYTC")
+DEV = os.getenv("DEV")
 
 LOGGING_CONFIG = {
     "version": 1,

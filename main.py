@@ -11,6 +11,7 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='?', intents=intents)
 
+
 @bot.event
 async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name="for /set_status"))
@@ -29,35 +30,41 @@ async def on_ready():
         
 @bot.command()
 async def reload(ctx, cog: str):
-    if f"{cog}.py" in os.listdir('./cogs'):
+    if f"{cog}.py" in os.listdir('./cogs') and str(ctx.message.author.id) in settings.DEV:
         try:
             await bot.reload_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
         except:
             await ctx.send(f"an error ocured")
-    else:
+    elif str(ctx.message.author.id) in settings.DEV:
         await ctx.send(f"no cog exists named {cog}")
+    else:
+        await ctx.send(f"author is not a dev!")
 
 @bot.command()
 async def load(ctx, cog: str):
-    if f"{cog}.py" in os.listdir('./cogs'):
+    if f"{cog}.py" in os.listdir('./cogs') and str(ctx.message.author.id) in settings.DEV:
         try:
             await bot.load_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
         except:
             await ctx.send(f"an error ocured")
-    else:
+    elif str(ctx.message.author.id) in settings.DEV:
         await ctx.send(f"no cog exists named {cog}")
+    else:
+        await ctx.send(f"author is not a dev!")
 
 @bot.command()
 async def unload(ctx, cog: str):
-    if f"{cog}.py" in os.listdir('./cogs'):
-        try:
+    if f"{cog}.py" in os.listdir('./cogs') and str(ctx.message.author.id) in settings.DEV:
+        try:    
             await bot.unload_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
         except:
             await ctx.send(f"an error ocured")
-    else:
+    elif str(ctx.message.author.id) in settings.DEV:
         await ctx.send(f"no cog exists named {cog}")
+    else:
+        await ctx.send(f"author is not a dev!")
      
 bot.run(settings.TOKEN, root_logger=True)
