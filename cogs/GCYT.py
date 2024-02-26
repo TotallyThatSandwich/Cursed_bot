@@ -22,8 +22,9 @@ class GCYT(commands.Cog):
     async def retrieve_videos(self):
         videoID = await self.retrieveNewestGCGSVideo()
 
-        embed = await self.video_embed(videoID=videoID)
         if videoID != None:
+            embed = await self.video_embed(videoID=videoID)
+
             try:
                 channel = self.bot.get_channel(int(settings.GCYTC))
                 await channel.send(embed=embed)
