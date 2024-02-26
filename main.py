@@ -27,4 +27,16 @@ async def on_ready():
 
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
         
+@bot.command()
+async def reload(ctx, cog: str):
+     await bot.reload_extension(f"cogs.{cog.lower()}")
+
+@bot.command()
+async def load(ctx, cog: str):
+     await bot.load_extension(f"cogs.{cog.lower()}")
+
+@bot.command()
+async def unload(ctx, cog: str):
+     await bot.unload_extension(f"cogs.{cog.lower()}")
+     
 bot.run(settings.TOKEN, root_logger=True)
