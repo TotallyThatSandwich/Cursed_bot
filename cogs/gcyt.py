@@ -83,7 +83,7 @@ class GCYT(commands.Cog):
         description = response["items"][0]["snippet"]["description"]
         thumbnail = response["items"][0]["snippet"]["thumbnails"]["maxres"]["url"]
 
-        embed=discord.Embed(title=title, url="https://www.youtube.com/watch?v=" + videoID, description=description)
+        embed=discord.Embed(title=title, url="https://www.youtube.com/watch?v=" + videoID, description=description, color=0xc15d23)
         embed.set_author(name="Generic Cursed Youtube Channel", url="https://www.youtube.com/@GenericCursedYTC", icon_url="https://yt3.googleusercontent.com/9tCKg_JTDrkkmkn6PBEDn-4FfGuDAfljGyw_9taAGWouDnSU7LJZ54G6izBm-AAYrGJ9ZpcMqA=s176-c-k-c0x00ffffff-no-rj")
         embed.set_thumbnail(url="https://yt3.googleusercontent.com/9tCKg_JTDrkkmkn6PBEDn-4FfGuDAfljGyw_9taAGWouDnSU7LJZ54G6izBm-AAYrGJ9ZpcMqA=s176-c-k-c0x00ffffff-no-rj")
         embed.set_footer(icon_url="https://upload.wikimedia.org/wikipedia/commons/e/ef/Youtube_logo.png", text="Youtube")
