@@ -20,7 +20,9 @@ class react(commands.Cog):
         
         messageContent = str(message.content)
 
-        if "*" in messageContent and "reply" in str(message.type):
+        if "reply" in str(message.type):
+            if not ("*" in messageContent and len(messageContent) > 1 and " " not in messageContent):
+                return
             await message.reply("https://tenor.com/view/pon-gif-15097379091171620462")
         else:
             logger.info(message, message.type)
