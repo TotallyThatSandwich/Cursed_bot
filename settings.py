@@ -11,6 +11,8 @@ BLACKLIST = os.getenv("BLACKLIST")
 GENERAL = os.getenv("GENERAL")
 GCYTC = os.getenv("GCYTC")
 DEV = os.getenv("DEV")
+GITHUB_REPO_URL = os.environ.get("GITHUB_REPO_URL")
+GITHUB_PAT = os.environ.get("GITHUB_PAT")
 
 LOGGING_CONFIG = {
     "version": 1,

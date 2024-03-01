@@ -67,12 +67,5 @@ async def unload(ctx, cog: str):
         await ctx.send(f"no cog exists named {cog}")
     else:
         await ctx.send(f"author is not a dev!")
-     
-@bot.command()
-async def gitPull(ctx):
-    if str(ctx.message.author.id) in settings.DEV:
-        g = git.cmd.Git(".")
-        g.pull()
-        await ctx.send("pulled")
 
 bot.run(settings.TOKEN, root_logger=True)
