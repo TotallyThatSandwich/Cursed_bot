@@ -1,0 +1,10 @@
+{
+    "minecraft": {
+        "link": "minecraft.genericcursed.com",
+        "whitelist": "yes, contact <@948124346092781608> for access",
+        "rules": ["just dont be a dick"],
+        "colour": "0x33cc33",
+        "img": "https://preview.redd.it/avjal33hpqo61.png?width=512&format=png&auto=webp&s=b652d83347448df74c8ba61c17b322e686ee32a4",
+        "port": 25565
+    }
+}
