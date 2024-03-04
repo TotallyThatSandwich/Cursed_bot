@@ -22,7 +22,6 @@ class react(commands.Cog):
 
         messageContent = str(message.content).lower()
 
-        
         # Use this if condition for any messages that are replying to others. These listeners don't listen for the bot itself.
         if "reply" in str(message.type) and not(str(message.author.id) in ["1210389365185056818", "1210512184103403530"]):
             if "*" in messageContent and len(messageContent) > 1 and " " not in messageContent:
