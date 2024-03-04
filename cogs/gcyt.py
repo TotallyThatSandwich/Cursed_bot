@@ -5,6 +5,7 @@ import os
 import sys
 import aiofiles
 import requests
+from datetime import datetime
 
 sys.path.append(os.path.abspath("../"))
 
@@ -82,8 +83,9 @@ class GCYT(commands.Cog):
         title = response["items"][0]["snippet"]["title"]
         description = response["items"][0]["snippet"]["description"]
         thumbnail = response["items"][0]["snippet"]["thumbnails"]["maxres"]["url"]
+        publishDate = response["items"][0]["snippet"]["publishedAt"]
 
-        embed=discord.Embed(title=title, url="https://www.youtube.com/watch?v=" + videoID, description=description, color=0xc15d23)
+        embed=discord.Embed(title=title, url="https://www.youtube.com/watch?v=" + videoID, description=description, color=0xc15d23, timestamp=datetime.strptime(publishDate, "%Y-%m-%dT%H:%M:%SZ"))
         embed.set_author(name="Generic Cursed Youtube Channel", url="https://www.youtube.com/@GenericCursedYTC", icon_url="https://yt3.googleusercontent.com/9tCKg_JTDrkkmkn6PBEDn-4FfGuDAfljGyw_9taAGWouDnSU7LJZ54G6izBm-AAYrGJ9ZpcMqA=s176-c-k-c0x00ffffff-no-rj")
         embed.set_thumbnail(url="https://yt3.googleusercontent.com/9tCKg_JTDrkkmkn6PBEDn-4FfGuDAfljGyw_9taAGWouDnSU7LJZ54G6izBm-AAYrGJ9ZpcMqA=s176-c-k-c0x00ffffff-no-rj")
         embed.set_footer(icon_url="https://upload.wikimedia.org/wikipedia/commons/e/ef/Youtube_logo.png", text="Youtube")
