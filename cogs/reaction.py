@@ -26,9 +26,10 @@ class react(commands.Cog):
             if not ("*" in messageContent and len(messageContent) > 1 and " " not in messageContent):
                 return
             # 75% chance to react
-            if random.randint(0, 3) == 1:
+            if random.randint(1, 100) <= 75:
+                await message.reply(random.choice(nerds))
+            else:
                 return
-            await message.reply(random.choice(nerds))
         else:
             logger.info(message, message.type)
 

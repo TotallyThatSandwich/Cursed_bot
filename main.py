@@ -2,7 +2,6 @@ from discord.ext import commands
 import discord
 import os
 import settings
-import git
 
 logger = settings.logging.getLogger("bot")
 
@@ -12,6 +11,8 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='?', intents=intents)
 
+async def is_admin(ctx):
+    return str(ctx.message.author.id) in settings.DEV
 
 @bot.event
 async def on_ready():
@@ -20,7 +21,7 @@ async def on_ready():
     for cog_file in os.listdir('./cogs'):
             if cog_file.endswith(".py"):
                 await bot.load_extension(f"cogs.{cog_file[:-3]}")
-    
+
     try:
         synced = await bot.tree.sync()
         logger.info(f"Synced {len(synced)} command(s)")
@@ -28,44 +29,43 @@ async def on_ready():
         print(e)
 
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
-        
+
+
 @bot.command()
+@commands.check(is_admin)
 async def reload(ctx, cog: str):
-    if f"{cog}.py" in os.listdir('./cogs') and str(ctx.message.author.id) in settings.DEV:
+    if f"{cog}.py" in os.listdir('./cogs'):
         try:
             await bot.reload_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
         except:
             await ctx.send(f"an error ocured")
-    elif str(ctx.message.author.id) in settings.DEV:
-        await ctx.send(f"no cog exists named {cog}")
     else:
-        await ctx.send(f"author is not a dev!")
+        await ctx.send(f"no cog exists named {cog}")
 
 @bot.command()
+@commands.check(is_admin)
 async def load(ctx, cog: str):
-    if f"{cog}.py" in os.listdir('./cogs') and str(ctx.message.author.id) in settings.DEV:
+    if f"{cog}.py" in os.listdir('./cogs'):
         try:
             await bot.load_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
         except:
             await ctx.send(f"an error ocured")
-    elif str(ctx.message.author.id) in settings.DEV:
-        await ctx.send(f"no cog exists named {cog}")
     else:
-        await ctx.send(f"author is not a dev!")
+        await ctx.send(f"no cog exists named {cog}")
 
 @bot.command()
+@commands.check(is_admin)
 async def unload(ctx, cog: str):
-    if f"{cog}.py" in os.listdir('./cogs') and str(ctx.message.author.id) in settings.DEV:
-        try:    
+    if f"{cog}.py" in os.listdir('./cogs'):
+        try:
             await bot.unload_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
         except:
             await ctx.send(f"an error ocured")
-    elif str(ctx.message.author.id) in settings.DEV:
-        await ctx.send(f"no cog exists named {cog}")
     else:
-        await ctx.send(f"author is not a dev!")
+        await ctx.send(f"no cog exists named {cog}")
+
 
 bot.run(settings.TOKEN, root_logger=True)
