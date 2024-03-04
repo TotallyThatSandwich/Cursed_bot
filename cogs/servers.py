@@ -59,5 +59,14 @@ class Servers(commands.Cog):
         except:
             await interaction.response.send_message(f"No server exists named {server_name}", ephemeral=True)
 
+    @app_commands.command(name="port_checker", description="Port Check")
+    async def port_checker(self, interaction, ip: str, port: str):
+        sock.settimeout(2)
+        result = sock.connect_ex((ip,int(port)))
+
+        if result == 0:
+            await interaction.response.send_message(f"Port {port} is open on {ip}")
+        else:
+            await interaction.response.send_message(f"Port {port} is closed on {ip}")
 async def setup(bot):
     await bot.add_cog(Servers(bot))
