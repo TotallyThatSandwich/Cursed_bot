@@ -21,19 +21,6 @@ class react(commands.Cog):
     async def on_message(self, message):
 
         messageContent = str(message.content)
-
-<<<<<<< HEAD
-        if "reply" in str(message.type):
-            if not ("*" in messageContent and len(messageContent) > 1 and " " not in messageContent):
-                return
-
-            if random.randint(1, 100) <= 75:
-                await message.reply(random.choice(nerds))
-            else:
-                return
-        else:
-            logger.info(message, message.type)
-=======
         
         # Use this if condition for any messages that are replying to others. These listeners don't listen for the bot itself.
         if "reply" in str(message.type) and not(str(message.author.id) in ["1210389365185056818", "1210512184103403530"]):
@@ -48,7 +35,6 @@ class react(commands.Cog):
                     await message.reply("\"Based\"? Are you fucking kidding me? I spent a decent portion of my life writing all of that and your response to me is \"Based\"? Are you so mentally handicapped that the only word you can comprehend is \"Based\" - or are you just some fucking asshole who thinks that with such a short response, he can make a statement about how meaningless what was written was? Well, I'll have you know that what I wrote was NOT meaningless, in fact, I even had my written work proof-read by several professors of literature. Don't believe me? I doubt you would, and your response to this will probably be \"Based\" once again. Do I give a fuck? No, does it look like I give even the slightest fuck about five fucking letters? I bet you took the time to type those five letters too, I bet you sat there and chuckled to yourself for 20 hearty seconds before pressing \"send\". You're so fucking pathetic. I'm honestly considering directing you to a psychiatrist, but I'm simply far too nice to do something like that. You, however, will go out of your way to make a fool out of someone by responding to a well-thought-out, intelligent, or humorous statement that probably took longer to write than you can last in bed with a chimpanzee. What do I have to say to you? Absolutely nothing. I couldn't be bothered to respond to such a worthless attempt at a response. Do you want \"Based\" on your gravestone?")
                 else:
                     return
->>>>>>> refs/remotes/origin/develop
 
         # Normal message listners go below
         
