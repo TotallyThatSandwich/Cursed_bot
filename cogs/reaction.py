@@ -20,7 +20,7 @@ class react(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
 
-        messageContent = str(message.content)
+        messageContent = str(message.content).lower()
 
         
         # Use this if condition for any messages that are replying to others. These listeners don't listen for the bot itself.
@@ -46,7 +46,7 @@ class react(commands.Cog):
                 if random.randint(1,2) == 1:
                     await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
 
-        if "I hate" in messageContent:
+        if "i hate" in messageContent:
             word = messageContent.split("I hate")
             word = word[len(word)-1]
 
