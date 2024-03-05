@@ -32,15 +32,15 @@ class genericAI(commands.Cog):
     async def on_message(self, message):
         botQuery = str(message.content)
         if "1210389365185056818" in message.content or "1210512184103403530" in message.content and not(message.author.id in ["1210389365185056818", "1210512184103403530"]):
-            try:
+            if "1210389365185056818" in botQuery:
                 botQuery = botQuery.replace(f"<@1210389365185056818>", "")
-            except:
+            else:
                 botQuery = botQuery.replace(f"<@1210512184103403530>", "")
             
             response = str(genericChatBot.get_response(botQuery))
-            try:
+            if "1210389365185056818" in response:
                 response = response.replace("<@1210389365185056818>", "")
-            except:
+            else:
                 response = response.replace("<@1210512184103403530>", "")
             
             await message.channel.send(response)
@@ -53,17 +53,22 @@ class genericAI(commands.Cog):
     async def trainMessageData(self, interaction: discord.Interaction, limit: int = None):
         if limit > 50 or limit == None:
             return await interaction.response.send_message("Limit must be less than 50 or not empty")
-        messageTrain = interaction.channel.history(limit=limit)
+        
+        messageTrain = []
+        history = interaction.channel.history(limit=limit)
+        
+        async for i in history:
+            messageTrain.append(i.content)
 
         formattedMessageTrain = []
-        async for i in messageTrain:
+        for i in messageTrain:
             formattedMessageTrain.append(str(i).lower())
         
         try:
             trainer.train(formattedMessageTrain)
         except Exception as e:
-            return await interaction.response.send_message(f"An error occured: {e}")
-        return await interaction.response.send_message("Training complete")
+            await interaction.response.send_message(f"An error occured: {e}")
+        await interaction.response.send_message("Training complete")
 
 async def setup(bot):
     await bot.add_cog(genericAI(bot))
