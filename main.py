@@ -2,6 +2,9 @@ from discord.ext import commands
 import discord
 import os
 import settings
+import git
+
+repo = git.Repo(os.getcwd())
 
 logger = settings.logging.getLogger("bot")
 
@@ -66,6 +69,12 @@ async def unload(ctx, cog: str):
             await ctx.send(f"an error ocured")
     else:
         await ctx.send(f"no cog exists named {cog}")
+
+@bot.command(name="update_bot")
+@commands.check(is_admin)
+async def pull(ctx):
+    origin = repo.remotes.origin
+    origin.pull()
 
 
 bot.run(settings.TOKEN, root_logger=True)
