@@ -27,7 +27,14 @@ class genericAI(commands.cog):
     
     @app_commands.command()
     async def trainMessageData(self, ctx, limit):
-        trainer.train(ctx.channel.fetch_message(limit=limit))
+        if limit > 50:
+            return await ctx.send("Limit must be less than 50")
+        messageTrain = ctx.channel.fetch_message(limit=limit)
+        formattedMessageTrain = []
+        for i in messageTrain:
+            formattedMessageTrain.append(str(i).lower())
+
+        trainer.train(formattedMessageTrain)
 
 async def setup(bot):
     await bot.add_cog(genericAI(bot))
