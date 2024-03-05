@@ -62,22 +62,29 @@ class genericAI(commands.Cog):
     @app_commands.command(name="train_bot", description="Train the bot with the last x messages in the channel")
     @app_commands.describe(limit = "How many messages should the bot be trained with?")
     async def trainMessageData(self, interaction: discord.Interaction, limit: int = None):
-        if limit > 50 or limit == None:
+        if "511432321556283402" not in settings.DEV or "948124346092781608" not in settings.DEV:
+            return await interaction.response.send_message("You are not authorized to use this command", ephemeral=True)
+        
+        if limit > 100 or limit == None:
             return await interaction.response.send_message("Limit must be less than 50 or not empty")
         
-        messageTrain = []
+        messageElement = []
         history = interaction.channel.history(limit=limit)
-        
+        finalMessageTrain = []
+
         async for i in history:
             if not(i.author.id in ["1210389365185056818", "1210512184103403530"]):
-                messageTrain.append(i.content)
-            
-        formattedMessageTrain = []
-        for i in messageTrain:
-            formattedMessageTrain.append(str(i).lower())
-        
+                if "reply" in str(i.type):
+                    messageElement = interaction.id
+                    messageElement = await interaction.channel.fetch_message(messageElement)
+                    finalMessageTrain.append([await interaction.channel.fetch_message(messageElement.reference.message_id), messageElement])
+               
+
         try:
-            trainer.train(formattedMessageTrain)
+            for i in range(len(finalMessageTrain)):
+                beautify = "\n".join(finalMessageTrain[i])
+                logger.info(f"Training bot with:\n{beautify}") 
+                trainer.train(finalMessageTrain[i])
         except Exception as e:
             await interaction.response.send_message(f"An error occured: {e}")
         await interaction.response.send_message("Training complete")
