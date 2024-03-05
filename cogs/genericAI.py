@@ -9,20 +9,43 @@ from nltk import pos_tag
 from chatterbot import ChatBot
 from chatterbot.trainers import ListTrainer
 
-genericAI = ChatBot("genericAI")
-trainer = ListTrainer(genericAI)
+genericChatBot = ChatBot("GenericBot")
+trainer = ListTrainer(genericChatBot)
+
+conversation = [
+    "Hello",
+    "Hi there!",
+    "How are you doing?",
+    "I'm doing great.",
+    "That is good to hear",
+    "Thank you.",
+    "You're welcome."
+]
+trainer.train(conversation)
 
 class genericAI(commands.Cog):
+
     def __init__(self, bot):
-        self.bot = bot
+        self.bot = bot,
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if "1210389365185056818" in message.content or "1210512184103403530" in message.content:
-            response = genericAI.get_response(message.content)
+        botQuery = str(message.content)
+        if "1210389365185056818" in message.content or "1210512184103403530" in message.content and not(message.author.id in ["1210389365185056818", "1210512184103403530"]):
+            try:
+                botQuery = botQuery.replace(f"<@1210389365185056818>", "")
+            except:
+                botQuery = botQuery.replace(f"<@1210512184103403530>", "")
+            
+            response = str(genericChatBot.get_response(botQuery))
+            try:
+                response = response.replace("<@1210389365185056818>", "")
+            except:
+                response = response.replace("<@1210512184103403530>", "")
+            
             await message.channel.send(response)
-        elif "reply" in str(message.type) and ["1210389365185056818", "1210512184103403530"] in message.mentions:
-            response = genericAI.get_response(message.content)
+
+        elif "reply" in str(message.type) and "1210389365185056818" in message.mentions or "1210512184103403530" in message.mentions:
             await message.channel.send(response)
     
     @app_commands.command(name="train_bot", description="Train the bot with the last x messages in the channel")
@@ -33,10 +56,14 @@ class genericAI(commands.Cog):
         messageTrain = interaction.channel.history(limit=limit)
 
         formattedMessageTrain = []
-        for i in messageTrain:
+        async for i in messageTrain:
             formattedMessageTrain.append(str(i).lower())
         
-        trainer.train(formattedMessageTrain)
+        try:
+            trainer.train(formattedMessageTrain)
+        except Exception as e:
+            return await interaction.response.send_message(f"An error occured: {e}")
+        return await interaction.response.send_message("Training complete")
 
 async def setup(bot):
     await bot.add_cog(genericAI(bot))
