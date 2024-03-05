@@ -9,6 +9,9 @@ from nltk import pos_tag
 from chatterbot import ChatBot
 from chatterbot.trainers import ListTrainer
 
+import settings as settings
+logger = settings.logging.getLogger("bot")
+
 genericChatBot = ChatBot("GenericBot")
 trainer = ListTrainer(genericChatBot)
 
@@ -39,13 +42,16 @@ class genericAI(commands.Cog):
             
             botQuery = botQuery.replace("", "")
             response = str(genericChatBot.get_response(botQuery))
+            
             if "1210389365185056818" in response:
                 response = response.replace("<@1210389365185056818>", "")
             else:
                 response = response.replace("<@1210512184103403530>", "")
+
             if "<@" in response:
                 response = response.split(">")
-                response = str(response[1])
+                logger.info(response)
+                response = response[1]
 
             await message.channel.send(response)
 
