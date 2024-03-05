@@ -120,8 +120,9 @@ class Servers(commands.Cog):
                 embed.add_field(name="other", value=other, inline=False)
 
                 await interaction.response.send_message(embed=embed)
-            except:
+            except Exception as e:
                 await interaction.response.send_message(f"No server exists named {server_name}", ephemeral=True)
+                logger.info(e)
 
     @app_commands.command(name="port_checker", description="Port Check")
     async def port_checker(self, interaction: discord.Interaction, ip: str, port: str):
