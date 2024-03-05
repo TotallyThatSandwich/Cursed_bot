@@ -37,12 +37,16 @@ class genericAI(commands.Cog):
             else:
                 botQuery = botQuery.replace(f"<@1210512184103403530>", "")
             
+            botQuery = botQuery.replace("", "")
             response = str(genericChatBot.get_response(botQuery))
             if "1210389365185056818" in response:
                 response = response.replace("<@1210389365185056818>", "")
             else:
                 response = response.replace("<@1210512184103403530>", "")
-            
+            if "<@" in response:
+                response = response.split(">")
+                response = str(response[1])
+
             await message.channel.send(response)
 
         elif "reply" in str(message.type) and "1210389365185056818" in message.mentions or "1210512184103403530" in message.mentions:
@@ -58,8 +62,9 @@ class genericAI(commands.Cog):
         history = interaction.channel.history(limit=limit)
         
         async for i in history:
-            messageTrain.append(i.content)
-
+            if not(i.author.id in ["1210389365185056818", "1210512184103403530"]):
+                messageTrain.append(i.content)
+            
         formattedMessageTrain = []
         for i in messageTrain:
             formattedMessageTrain.append(str(i).lower())
