@@ -42,16 +42,17 @@ class genericAI(commands.Cog):
             
             botQuery = botQuery.replace("", "")
             response = str(genericChatBot.get_response(botQuery))
-            
+
             if "1210389365185056818" in response:
                 response = response.replace("<@1210389365185056818>", "")
             else:
                 response = response.replace("<@1210512184103403530>", "")
 
-            if "<@" in response:
-                response = response.split(">")
-                logger.info(response)
-                response = response[1]
+            if "@" in response:
+                response = response.split("@")
+                response = "".join(response)
+
+            print(response)
 
             await message.channel.send(response)
 
