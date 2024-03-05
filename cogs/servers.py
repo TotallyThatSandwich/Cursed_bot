@@ -8,10 +8,6 @@ import json
 import settings 
 import socket
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-result = sock.connect_ex(('127.0.0.1',80))
-
 sys.path.append(os.path.abspath("../"))
 
 logger = settings.logging.getLogger("bot")
@@ -100,6 +96,8 @@ class Servers(commands.Cog):
                 img = servers[name]["img"]
                 port = int(servers[name]["port"])
 
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
                 sock.settimeout(15)
                 result = sock.connect_ex((address,port))
 
@@ -126,6 +124,9 @@ class Servers(commands.Cog):
 
     @app_commands.command(name="port_checker", description="Port Check")
     async def port_checker(self, interaction: discord.Interaction, ip: str, port: str):
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         sock.settimeout(15)
         result = sock.connect_ex((ip,int(port)))
 
@@ -134,9 +135,9 @@ class Servers(commands.Cog):
         else:
             await interaction.response.send_message(f"Port {port} is closed on {ip}")
 
-    @app_commands.command(name="add_server", description="add server to server list")
-    async def add_server(self, interaction: discord.Interaction):
-        add_server = self.addServer()
-        await interaction.response.send_modal(add_server)
+    #@app_commands.command(name="add_server", description="add server to server list")
+    #async def add_server(self, interaction: discord.Interaction):
+    #    add_server = self.addServer()
+    #    await interaction.response.send_modal(add_server)
 async def setup(bot):
     await bot.add_cog(Servers(bot))
