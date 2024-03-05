@@ -4,6 +4,11 @@ import os
 import random
 import asyncio
 import sys
+import nltk 
+from nltk import pos_tag
+
+nltk.download('averaged_perceptron_tagger')
+
 
 sys.path.append(os.path.abspath("../"))
 
@@ -53,7 +58,7 @@ class react(commands.Cog):
                     await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
 
         if "i hate" in messageContent:
-            word = messageContent.split("I hate")
+            word = messageContent.split("i hate")
             word = word[len(word)-1]
 
             word = word.split()
@@ -66,10 +71,15 @@ class react(commands.Cog):
             for i in word[0]:
                 if i.isalpha():
                     finalFormattedWord = "".join([finalFormattedWord, i])
-            if finalFormattedWord != "you":
+                    
+            wordType = pos_tag([finalFormattedWord])
+
+            if wordType[0][1] == "NN":
                 await message.reply(f"If {finalFormattedWord} has a million fans, then I am one of them. If {finalFormattedWord} has ten fans, then I am one of them. If {finalFormattedWord} has only one fan then that is me. If {finalFormattedWord} has no fans, then that means I am no longer on earth. If the world is against {finalFormattedWord}, then I am against the world.")
-            else:
-                await message.reply(f"If they have a million fans, then I am one of them. If they have ten fans, then I am one of them. If {finalFormattedWord} have only one fan then that is me. If they have no fans, then that means I am no longer on earth. If the world is against them, then I am against the world.")
+            elif wordType[0][1] == "NNS":
+                await message.reply(f"If {finalFormattedWord} have a million fans, then I am one of them. If {finalFormattedWord} have ten fans, then I am one of them. If {finalFormattedWord} have only one fan then that is me. If {finalFormattedWord} have no fans, then that means I am no longer on earth. If the world is against {finalFormattedWord}, then I am against the world.")
+            elif wordType[0][1]=="PRP":
+                await message.reply(f"If they have a million fans, then I am one of them. If they have ten fans, then I am one of them. If they have only one fan then that is me. If they have no fans, then that means I am no longer on earth. If the world is against them, then I am against the world.")
 
         if "bill" in messageContent and not (str(message.author.id) in ["1210389365185056818", "1210512184103403530"]):
             await message.reply("What the ♥♥♥♥ is wrong with this old bastard? Homeboy just straight up dies mid-level, the ♥♥♥♥ is this ♥♥♥♥? Dumb ♥♥♥♥ obviously missed the directions for the fountain of youth. Senile old ♥♥♥♥ can't even hold his own breath for 2 seconds without coughing up a lung, eat ♥♥♥♥ Bill. I like the science dude better.")
