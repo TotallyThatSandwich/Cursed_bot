@@ -6,3 +6,4 @@ pyspellchecker==0.8.1
 gitpython==3.1.42
 chatterbot==1.0.4
 nltk==3.7
+gitpython==3.1.42
