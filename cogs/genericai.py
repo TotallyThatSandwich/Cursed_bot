@@ -71,13 +71,19 @@ class genericAI(commands.Cog):
             
             if "@" in response:
                 response = response.split("@")
+                username = str(response).split(">")[0]
+                username = username.split("<")[1]
+                response = response.split("<")
                 response = "".join(response)
 
             return response
 
-        # checks if someone is mentioning the bot
-        if "1210389365185056818" in message.content or "1210512184103403530" in message.content and not(message.author.id in ["1210389365185056818", "1210512184103403530"]):
-            response = await formatResponse(botQuery)
+        # checks if someone is mentioning the bot and checks if it is the bot itself
+        if "1210389365185056818" in message.content or "1210512184103403530" in message.content and not (str(message.author.id) in "1210389365185056818" or str(message.author.id) in "1210512184103403530"):
+            if "reply" in str(message.type):
+                response = await formatResponse(f"{botQuery}: {message.reference.content}")
+            else: 
+                response = await formatResponse(botQuery)
             await message.channel.send(response)
 
         elif "reply" in str(message.type) and "1210389365185056818" in message.mentions or "1210512184103403530" in message.mentions:
@@ -90,13 +96,14 @@ class genericAI(commands.Cog):
         if "reply" in str(message.type):
             repliedMessage = await message.channel.fetch_message(message.reference.message_id)
 
-            if repliedMessage.author.id == "1210389365185056818" or repliedMessage.author.id == "1210512184103403530":
+            if str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530":
                 response = await formatResponse(botQuery)
                 return await message.channel.send(response)
-            else:
+            elif not("1210389365185056818" in str(repliedMessage.content) or "1210512184103403530" in str(repliedMessage.content) or repliedMessage.author.id == message.author.id):
                 trainer.train([repliedMessage.content, message.content])
                 print(f"training bot with {[repliedMessage.content, message.content]}")
                 logger.info(f"Training bot with {[repliedMessage.content, message.content]}")
+            
                 
     
     @app_commands.command(name="train_bot", description="Train the bot with the last x messages in the channel")
