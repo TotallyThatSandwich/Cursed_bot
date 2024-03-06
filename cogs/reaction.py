@@ -38,7 +38,7 @@ class react(commands.Cog):
             optoutlistLines = optoutlist.readlines()
             for i in optoutlistLines:
                 if i == str(message.author.id):
-                    return await message.reply("You have opted-out of bot's responses.", )
+                    return
                 
 
         messageContent = str(message.content).lower()
