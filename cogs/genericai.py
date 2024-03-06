@@ -52,10 +52,11 @@ class genericAI(commands.Cog):
     def __init__(self, bot):
         self.bot = bot,
 
+    
     @commands.Cog.listener()
     async def on_message(self, message):
         botQuery = str(message.content)
-
+        
         if "1210389365185056818" in botQuery:
             botQuery = botQuery.replace(f"<@1210389365185056818>", "")
         else:
@@ -85,7 +86,18 @@ class genericAI(commands.Cog):
                 response = await formatResponse(botQuery)
                 return await message.channel.send(response)
         
+        # checks if someone is replying to the bot, then check if it is replying to bot or random message.
+        if "reply" in str(message.type):
+            repliedMessage = await message.channel.fetch_message(message.reference.message_id)
 
+            if repliedMessage.author.id == "1210389365185056818" or repliedMessage.author.id == "1210512184103403530":
+                response = await formatResponse(botQuery)
+                return await message.channel.send(response)
+            else:
+                trainer.train([repliedMessage.content, message.content])
+                print(f"training bot with {[repliedMessage.content, message.content]}")
+                logger.info(f"Training bot with {[repliedMessage.content, message.content]}")
+                
     
     @app_commands.command(name="train_bot", description="Train the bot with the last x messages in the channel")
     @app_commands.describe(limit = "How many messages should the bot be trained with?")
