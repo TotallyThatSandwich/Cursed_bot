@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import os
 import random
 import asyncio
@@ -33,6 +34,13 @@ class react(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
 
+        with open("optoutlist.txt", "r") as optoutlist:
+            optoutlistLines = optoutlist.readlines()
+            for i in optoutlistLines:
+                if i == str(message.author.id):
+                    return await message.reply("You have opted-out of bot's responses.", )
+                
+
         messageContent = str(message.content).lower()
 
         # Use this if condition for any messages that are replying to others. These listeners don't listen for the bot itself.
@@ -52,11 +60,12 @@ class react(commands.Cog):
         # Normal message listners go below
         
         if "crazy" in messageContent:
-            if not(str(message.author.id) in ["1210389365185056818", "1210512184103403530"]):
+            if str(message.author.id) not in ["1210389365185056818", "1210512184103403530"]:
                 await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
-            else:
-                if random.randint(1,2) == 1:
-                    await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
+            # elif str(message.author.id) in ["1210389365185056818", "1210512184103403530"] and "reply" in str(message.type):
+            #     if random.randint(1,2) == 1:
+            #         await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
+
 
         if "i hate" in messageContent:
             word = messageContent.split("i hate")
@@ -111,6 +120,23 @@ class react(commands.Cog):
         
         if random.randint(1, 100) == 1 and not(str(message.author.id) in ["1210389365185056818", "1210512184103403530"]):
             await message.reply(randomCopypastas[random.randint(0, len(randomCopypastas)-1)])
+
+    @app_commands.command(name="opt-out", description="opt-out of the bot's responses")
+    async def optOut(self, interaction: discord.Interaction):
+        with open("optoutlist.txt", "a") as optoutlist:
+            optoutlist.write(f"{interaction.user.id}\n")
+        await interaction.response.send_message("You have opted-out of bot's responses.",delete_after=10, ephemeral=True)
+
+    @app_commands.command(name="opt-in", description="opt-in to the bot's responses")
+    async def optIn(self, interaction: discord.Interaction):
+        with open("optoutlist.txt", "r") as optoutlist:
+            optoutlistLines = optoutlist.readlines()
+            for i in optoutlistLines:
+                if i == interaction.user.id:
+                    optoutlistLines.remove(i)
+        with open("optoutlist.txt", "w") as optoutlist:
+            optoutlistLines.write(optoutlist)
+        await interaction.response.send_message("You have been removed from the opt-out list.", delete_after=10,  ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(react(bot))

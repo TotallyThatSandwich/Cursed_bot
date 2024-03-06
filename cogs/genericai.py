@@ -16,6 +16,8 @@ logger = settings.logging.getLogger("bot")
 genericChatBot = ChatBot("GenericBot")
 trainer = ListTrainer(genericChatBot)
 
+usableChannels = ["1028185142491107328"]
+
 conversation = [
     "Hello",
     "Hi there!",
