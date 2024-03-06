@@ -4,8 +4,9 @@ import os
 import random
 import asyncio
 import sys
-import nltk 
+import nltk
 from nltk import pos_tag
+
 
 nltk.download('averaged_perceptron_tagger')
 

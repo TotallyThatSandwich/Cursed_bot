@@ -4,6 +4,7 @@ from discord import app_commands
 import os
 import asyncio
 import sys
+import nltk
 from chatterbot import ChatBot
 from chatterbot.trainers import ListTrainer
 
@@ -72,8 +73,6 @@ class genericAI(commands.Cog):
                 if "reply" in str(i.type):
                     repliedMessage = await interaction.channel.fetch_message(i.reference.message_id)
                     formattedMessageTrain.append([repliedMessage, i])
-
- 
         
         try:
             for i in range(formattedMessageTrain):
