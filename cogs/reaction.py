@@ -36,13 +36,10 @@ class react(commands.Cog):
     async def on_message(self, message):
 
         with open("optoutlist.txt", "r") as optoutlist:
-<<<<<<< HEAD
             optoutlistLines = optoutlist.readlines()
             for i in optoutlistLines:
                 if str(message.author.id) in i:
                     return
-                
-=======
                 optoutlistLines = optoutlist.readlines()
                 for i in optoutlistLines:
                     if str(message.author.id) in i:
@@ -54,7 +51,6 @@ class react(commands.Cog):
         if str(message.author.id) in ["1210389365185056818", "1210512184103403530"]:
             return 
         
->>>>>>> main
         messageContent = str(message.content).lower()
 
         # Use this if condition for any messages that are replying to others. These listeners don't listen for the bot itself.
