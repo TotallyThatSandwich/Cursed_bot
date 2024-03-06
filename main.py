@@ -53,8 +53,8 @@ async def load(ctx, cog: str):
         try:
             await bot.load_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
-        except:
-            await ctx.send(f"an error ocured")
+        except Exception as e:
+            await ctx.send(f"an error ocured: {e}")
     else:
         await ctx.send(f"no cog exists named {cog}")
 
