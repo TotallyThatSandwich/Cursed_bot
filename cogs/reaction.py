@@ -34,10 +34,10 @@ class react(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
 
-        with open("../optoutlist.txt", "r") as optoutlist:
+        with open("optoutlist.txt", "r") as optoutlist:
             optoutlistLines = optoutlist.readlines()
             for i in optoutlistLines:
-                if i == str(message.author.id):
+                if str(message.author.id) in i:
                     return
                 
         messageContent = str(message.content).lower()
@@ -122,19 +122,20 @@ class react(commands.Cog):
 
     @app_commands.command(name="opt-out", description="opt-out of the bot's responses")
     async def optOut(self, interaction: discord.Interaction):
-        with open("../optoutlist.txt", "w") as optoutlist:
+        with open("optoutlist.txt", "w") as optoutlist:
             optoutlist.write(f"{interaction.user.id}\n")
         await interaction.response.send_message("You have opted-out of bot's responses.",delete_after=10, ephemeral=True)
 
     @app_commands.command(name="opt-in", description="opt-in to the bot's responses")
     async def optIn(self, interaction: discord.Interaction):
-        with open("../optoutlist.txt", "r") as optoutlist:
-            optoutlistLines = optoutlist.readlines()
+        with open("optoutlist.txt", "r") as optoutlistRead:
+            optoutlistLines = optoutlistRead.readlines()
             for i in optoutlistLines:
-                if i == interaction.user.id:
+                if str(interaction.user.id) in i:
                     optoutlistLines.remove(i)
-        with open("../optoutlist.txt", "w") as optoutlist:
-            optoutlistLines.write(optoutlist)
+        with open("optoutlist.txt", "w") as optoutlistWrite:
+            for i in optoutlistLines:
+                optoutlistWrite.write(f"{i}\n")
         await interaction.response.send_message("You have been removed from the opt-out list.", delete_after=10,  ephemeral=True)
 
 async def setup(bot):

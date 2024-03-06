@@ -94,12 +94,12 @@ class GCYT(commands.Cog):
         return embed
 
     async def save_video_id(self, video_id):
-        async with aiofiles.open("../latest_video_id.txt", "w") as f:
+        async with aiofiles.open("latest_video_id.txt", "w") as f:
             await f.write(video_id)
 
     async def read_saved_video_id(self):
         try:
-            async with aiofiles.open("../latest_video_id.txt", "r") as f:
+            async with aiofiles.open("latest_video_id.txt", "r") as f:
                 return (await f.read()).strip()
         except FileNotFoundError:
             return None
