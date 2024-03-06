@@ -52,7 +52,7 @@ async def load(ctx, cog: str):
     if f"{cog}.py" in os.listdir('./cogs'):
         try:
             await bot.load_extension(f"cogs.{cog.lower()}")
-            await ctx.send(f"reloaded {cog}")
+            await ctx.send(f"loded {cog}")
         except Exception as e:
             await ctx.send(f"an error occured, error: {e}")
     else:
@@ -64,7 +64,7 @@ async def unload(ctx, cog: str):
     if f"{cog}.py" in os.listdir('./cogs'):
         try:
             await bot.unload_extension(f"cogs.{cog.lower()}")
-            await ctx.send(f"reloaded {cog}")
+            await ctx.send(f"unloaded {cog}")
         except Exception as e:
             await ctx.send(f"an error occured, error: {e}")
     else:
