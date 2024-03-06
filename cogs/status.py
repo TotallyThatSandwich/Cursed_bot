@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 
-class Ststus(commands.Cog):
+class Status(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
@@ -21,4 +21,4 @@ class Ststus(commands.Cog):
             await interaction.response.send_message(f"faild to set status", ephemeral=True)
 
 async def setup(bot):
-    await bot.add_cog(Ststus(bot))
+    await bot.add_cog(Status(bot))
