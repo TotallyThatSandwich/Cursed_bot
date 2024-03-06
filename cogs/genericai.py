@@ -89,5 +89,26 @@ class genericAI(commands.Cog):
             await interaction.response.send_message(f"An error occured: {e}")
         await interaction.response.send_message("Training complete")
 
+    @app_commands.command(name="blacklist_user", description="block a user from training the bot")
+    @app_commands.describe(user = "The user to block")
+    async def blacklistUser(self, interaction: discord.Interaction, user: discord.User):
+        if interaction.author.id not in settings.DEV:
+            return await interaction.response.send_message("You do not have permission to use this command")
+        
+        blacklist = open("blacklist.txt", "a")
+        blacklist.write(f"{user.id}\n")
+        blacklist.close()
+        
+        await interaction.response.send_message(f"User {user.name} has been blacklisted")
+
+    @app_commands.command(name="unblacklist_user", description="unblock a user from training the bot")
+    @app_commands.describe(user = "The user to unblock")
+    async def unblacklistUser(self, interaction: discord.Interaction, user: discord.User):
+        if interaction.author.id not in settings.DEV:
+            return await interaction.response.send_message("You do not have permission to use this command")
+        
+        
+        await interaction.response.send_message(f"User {user.name} has been unblacklisted")
+
 async def setup(bot):
     await bot.add_cog(genericAI(bot))
