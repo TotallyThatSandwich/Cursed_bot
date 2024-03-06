@@ -34,11 +34,11 @@ class react(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
 
-        with open("optoutlist.txt", "r") as optoutlist:
+        with open("optoutlist.txt", "a") as optoutlist:
             optoutlistLines = optoutlist.readlines()
             for i in optoutlistLines:
                 if i == str(message.author.id):
-                    return await message.reply("You have opted-out of bot's responses.", )
+                    return
                 
 
         messageContent = str(message.content).lower()
