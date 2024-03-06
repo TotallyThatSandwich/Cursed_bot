@@ -5,6 +5,7 @@ import os
 import asyncio
 import sys
 import nltk
+
 from chatterbot import ChatBot
 from chatterbot.trainers import ListTrainer
 
@@ -61,7 +62,9 @@ class genericAI(commands.Cog):
     @app_commands.command(name="train_bot", description="Train the bot with the last x messages in the channel")
     @app_commands.describe(limit = "How many messages should the bot be trained with?")
     async def trainMessageData(self, interaction: discord.Interaction, limit: int = None):
-        if limit > 200 or limit == None:
+        if interaction.author.id not in settings.DEV:
+            return await interaction.response.send_message("You do not have permission to use this command")
+        elif limit > 200 or limit == None:
             return await interaction.response.send_message("Limit must be less than 200 or not empty")
         
         formattedMessageTrain = []
@@ -74,7 +77,7 @@ class genericAI(commands.Cog):
                     formattedMessageTrain.append([repliedMessage, i])
         
         try:
-            for i in range(formattedMessageTrain):
+            for i in range(len(formattedMessageTrain)-1):
                 trainer.train(formattedMessageTrain[i])
         except Exception as e:
             await interaction.response.send_message(f"An error occured: {e}")
