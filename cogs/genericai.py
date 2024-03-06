@@ -62,9 +62,8 @@ class genericAI(commands.Cog):
     @app_commands.describe(limit = "How many messages should the bot be trained with?")
     async def trainMessageData(self, interaction: discord.Interaction, limit: int = None):
         if limit > 200 or limit == None:
-            return await interaction.response.send_message("Limit must be less than 50 or not empty")
+            return await interaction.response.send_message("Limit must be less than 200 or not empty")
         
-        messageElement = []
         formattedMessageTrain = []
         history = interaction.channel.history(limit=limit)
         
