@@ -41,8 +41,8 @@ async def reload(ctx, cog: str):
         try:
             await bot.reload_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
-        except:
-            await ctx.send(f"an error ocured")
+        except Exception as e:
+            await ctx.send(f"an error occured, error: {e}")
     else:
         await ctx.send(f"no cog exists named {cog}")
 
@@ -53,8 +53,8 @@ async def load(ctx, cog: str):
         try:
             await bot.load_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
-        except:
-            await ctx.send(f"an error ocured")
+        except Exception as e:
+            await ctx.send(f"an error occured, error: {e}")
     else:
         await ctx.send(f"no cog exists named {cog}")
 
@@ -65,8 +65,8 @@ async def unload(ctx, cog: str):
         try:
             await bot.unload_extension(f"cogs.{cog.lower()}")
             await ctx.send(f"reloaded {cog}")
-        except:
-            await ctx.send(f"an error ocured")
+        except Exception as e:
+            await ctx.send(f"an error occured, error: {e}")
     else:
         await ctx.send(f"no cog exists named {cog}")
 
