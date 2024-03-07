@@ -30,10 +30,14 @@ class react(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-
+    
 
     @commands.Cog.listener()
     async def on_message(self, message):
+
+        if str(message.author.id) in ["1210389365185056818", "1210512184103403530"] and "reply" in str(message.type):
+                if random.randint(1,2) == 1:
+                    await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
 
         with open("optoutlist.txt", "r") as optoutlist:
             optoutlistLines = optoutlist.readlines()
@@ -70,10 +74,7 @@ class react(commands.Cog):
         # Normal message listners go below
         
         if "crazy" in messageContent:
-                await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
-            # elif str(message.author.id) in ["1210389365185056818", "1210512184103403530"] and "reply" in str(message.type):
-            #     if random.randint(1,2) == 1:
-            #         await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
+            await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
 
 
         if "i hate" in messageContent:

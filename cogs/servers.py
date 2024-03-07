@@ -56,7 +56,7 @@ class Servers(commands.Cog):
 
     async def on_submit(self, interaction: discord.Interaction):
         
-        with open("servers.json", "r") as f:
+        with open("servers.json", "w") as f:
             servers = json.load(f)
 
         address, port = self.address.split(":")
@@ -135,9 +135,9 @@ class Servers(commands.Cog):
         else:
             await interaction.response.send_message(f"Port {port} is closed on {ip}")
 
-    #@app_commands.command(name="add_server", description="add server to server list")
-    #async def add_server(self, interaction: discord.Interaction):
-    #    add_server = self.addServer()
-    #    await interaction.response.send_modal(add_server)
+    @app_commands.command(name="add_server", description="add server to server list")
+    async def add_server(self, interaction: discord.Interaction):
+        add_server = self.addServer()
+        await interaction.response.send_modal(add_server)
 async def setup(bot):
     await bot.add_cog(Servers(bot))
