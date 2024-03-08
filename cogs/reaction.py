@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import app_commands
 import os
 import random
-import asyncio
 import sys
 import nltk
 from nltk import pos_tag

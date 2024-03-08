@@ -3,9 +3,6 @@ from discord.ext import commands
 from discord import app_commands
 from discord import ui
 import os
-import asyncio
-import sys
-import nltk 
 from nltk import pos_tag
 from chatterbot import ChatBot
 from chatterbot.trainers import ListTrainer

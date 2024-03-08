@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import os
-import random
-import asyncio
-import sys
 import json
 import requests
+
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 import settings as settings
 
@@ -18,40 +19,47 @@ class Valorant(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def formatMessages(response, puuid):
-        
+    def formatMatchEmbed(response, puuid):
         finalGameStats = {}
         
+        #assigns details from response JSON file acquired from match 
         matchDetails = response["data"][0]["metadata"]
         playerDetails = response["data"][0]["players"]["all_players"]
         teamDetails = response["data"][0]["teams"]
-
-        for i in playerDetails:
-            if i["puuid"] == puuid:
-                requestedUser = i
-                break
+            
         
         totalRoundsPlayed = teamDetails["red"]["rounds_won"] + teamDetails["blue"]["rounds_won"]
         
         gameStats = {}
 
         for i in playerDetails:
-            gameStats.update({"kills": i["stats"]["kills"],
-                              "deaths": i["stats"]["deaths"],
-                              "assists": i["stats"]["assists"],
-                              "ACS": i["stats"]["score"]/totalRoundsPlayed,
-                              "ADR": i["damage_made"]/totalRoundsPlayed,
-                              "DD": (i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed),
-                              "rank": i["currenttier_patched"],
-                              "team": i["team"],
-                              "HS": f"{i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]/i["stats"]["legshots"])*100}%",
-                              "agent": i["character"],
-                              "tag":i["tag"]}
-                              )
+            if i["puuid"] == puuid:
+                requestedUser = i
+
+            gameStats.update({"kills": i["stats"]["kills"], #int
+                            "deaths": i["stats"]["deaths"], #int
+                            "assists": i["stats"]["assists"], #int
+                            "KDA": f"{i["stats"]["kills"]}/{i["stats"]["deaths"]}/{i["stats"]["assists"]}", #string
+                            "KDR": i["stats"]["kills"]/i["stats"]["deaths"], #float
+                            "ACS": i["stats"]["score"]/totalRoundsPlayed, #float
+                            "ADR": i["damage_made"]/totalRoundsPlayed, #float
+                            "DD": math.floor(i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed), #float
+                            "rank": i["currenttier_patched"], #string
+                            "team": i["team"], #string
+                            "HS": f"{i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]/i["stats"]["legshots"])*100}%", #string because of % sign
+                            "agent": i["character"], #string
+                            "tag":i["tag"]} #string
+                            )
             
             finalGameStats.update({i["name"]: gameStats})
 
-        
+        fig, ax = plt.subplots()
+
+        ax.xaxis.set_visible(False)
+        ax.yaxis.set_visible(False)
+
+        rows = len(gameStats)
+            
         finalFormat = {
             "matchTitle": f"{teamDetails["red"]["rounds_won"]}:{teamDetails["blue"]["rounds_won"]}",
             "matchDescription": f"**{matchDetails["map"]} - {matchDetails["mode"]}**",
@@ -86,7 +94,7 @@ class Valorant(commands.Cog):
         if(response.status != 200):
             return await interaction.response.send_message(f"Error with the status of {response.status}", ephemeral=True)
         
-        self.formatMessages(response, userAccount["data"]["puuid"])
+        self.formatMatchEmbed(response, userAccount["data"]["puuid"])
         
         embed = discord.Embed(title=f"", description="Here are your recent game stats", color=0x00ff00)
 
