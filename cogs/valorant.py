@@ -18,20 +18,51 @@ class Valorant(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def formatMessages(response):
+    def formatMessages(response, puuid):
         
-        matchDetails = response["data"][0]["meta"]
-        playerDetails = response["data"][0]["stats"]
+        finalGameStats = {}
+        
+        matchDetails = response["data"][0]["metadata"]
+        playerDetails = response["data"][0]["players"]["all_players"]
+        teamDetails = response["data"][0]["teams"]
 
+        for i in playerDetails:
+            if i["puuid"] == puuid:
+                requestedUser = i
+                break
+        
+        totalRoundsPlayed = teamDetails["red"]["rounds_won"] + teamDetails["blue"]["rounds_won"]
+        
+        gameStats = {}
+
+        for i in playerDetails:
+            gameStats.update({"kills": i["stats"]["kills"],
+                              "deaths": i["stats"]["deaths"],
+                              "assists": i["stats"]["assists"],
+                              "ACS": i["stats"]["score"]/totalRoundsPlayed,
+                              "ADR": i["damage_made"]/totalRoundsPlayed,
+                              "DD": (i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed),
+                              "rank": i["currenttier_patched"],
+                              "team": i["team"],
+                              "HS": f"{i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]/i["stats"]["legshots"])*100}%",
+                              "agent": i["character"],
+                              "tag":i["tag"]}
+                              )
+            
+            finalGameStats.update({i["name"]: gameStats})
+
+        
         finalFormat = {
-            "matchTitle": f"{matchDetails["teams"]["red"]}:{matchDetails["teams"]["blue"]}",
-            "matchDescription": f"**{matchDetails["map"]["name"]} - {matchDetails["mode"]}**",
-            "matchStats": f"**{playerDetails["kills"]}/{playerDetails["deaths"]}/{playerDetails["assists"]}**",
+            "matchTitle": f"{teamDetails["red"]["rounds_won"]}:{teamDetails["blue"]["rounds_won"]}",
+            "matchDescription": f"**{matchDetails["map"]} - {matchDetails["mode"]}**",
+            "matchStats": f"**{requestedUser["stats"]["kills"]}/{requestedUser["stats"]["deaths"]}/{requestedUser["stats"]["assists"]}**",
+            "agent": f"**{requestedUser["assets"]["agent"]["small"]}**",
+
         }
         return finalFormat
 
     @app_commands.slash_command(name="Get_recent_game", description="Get your recent game stats")
-    async def getRecentGames(self, interaction: discord.Interaction):
+    async def getRecentGame(self, interaction: discord.Interaction):
         URL = "https://api.henrikdev.xyz"
         userAccount = {}
 
@@ -45,17 +76,17 @@ class Valorant(commands.Cog):
 
         fetchParameters = {
             "affinity": "ap",
-            "name": userAccount["data"]["puuid"],
+            "puuid": userAccount["data"]["puuid"],
             "size": 1
         }
 
-        response = await requests.get(url=f"{URL}/valorant/v1/by-puuid/lifetime/matches", params=fetchParameters)
+        response = await requests.get(url=f"{URL}/valorant/v3/by-puuid/lifetime/matches", params=fetchParameters)
         response = response.json()
 
         if(response.status != 200):
             return await interaction.response.send_message(f"Error with the status of {response.status}", ephemeral=True)
         
-        self.formatMessages(response)
+        self.formatMessages(response, userAccount["data"]["puuid"])
         
         embed = discord.Embed(title=f"", description="Here are your recent game stats", color=0x00ff00)
 
