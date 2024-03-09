@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord import ui
 import json
 import requests
 import asyncio
@@ -11,8 +12,6 @@ import urllib.request
 
 import settings as settings
 logger = settings.logging.getLogger("bot")
-
-
 
 
 class valorant(commands.Cog):
@@ -89,10 +88,9 @@ class valorant(commands.Cog):
 
         img = Image.new('RGB', (600, 300), color = (6, 9, 23))
         draw = ImageDraw.Draw(img)
-        fontPath = os.path.abspath("fonts/")
-        print(fontPath+"\OpenSans-Regular.ttf", fontPath+"\OpenSans-Bold.ttf")
-        fnt = ImageFont.truetype(font=fontPath+"\OpenSans-Regular.ttf", size=20)
-        boldfnt = ImageFont.truetype(font=fontPath+"\OpenSans-Bold.ttf", size=45)
+
+        fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=20)
+        boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=45)
 
 
         #Draws the map image cropped on the top of the image
@@ -136,7 +134,7 @@ class valorant(commands.Cog):
         with open ("riotdetails.json", "r") as file:
             riotDetails = json.load(file)
             if not(str(interaction.user.id) in riotDetails):
-                return await interaction.followup.send("You are not logged in!", ephemeral=True)
+                return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
 
             userAccount = riotDetails[str(interaction.user.id)]
 
@@ -166,7 +164,7 @@ class valorant(commands.Cog):
 
     @app_commands.command(name="login_for_valorant", description="Login into your account")
     @app_commands.describe(username = "Enter your Valorant username. If you leave it empty, it will delete your information.")
-    async def login(self, interaction:discord.Interaction, username:str, tag:int):
+    async def loginValorant(self, interaction:discord.Interaction, username:str, tag:str):
         if(username == None):
             with open("riotdetails.json", "r") as file:
                 riotDetails = json.load(file)
@@ -176,10 +174,16 @@ class valorant(commands.Cog):
             
             return await interaction.response.send_message("Deleting your information...", ephemeral=True, delete_after=10)
         
+        
+        if("#" in str(tag)):
+            tag = tag.replace("#", "")
+        
         fetchRequests = {
             "name": username,
             "tag": str(tag)
         }
+
+
 
         response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{fetchRequests['name']}/{fetchRequests['tag']}")
         response = response.json()
@@ -197,14 +201,14 @@ class valorant(commands.Cog):
                 riotDetails.update({str(interaction.user.id): response})
                 with open ("riotdetails.json", "w") as file:
                     json.dump(riotDetails, file)
+                    await interaction.response.send_message("Logged in!", ephemeral=True)
 
         except Exception as e:
-            
             with open ("riotdetails.json", "w+") as file:
                 riotDetails.update({str(interaction.user.id): response})
                 json.dump(riotDetails, file)
         
-        await interaction.response.send_message("Logged in!", ephemeral=True)
+            await interaction.response.send_message("Logged in!", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(valorant(bot))
