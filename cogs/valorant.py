@@ -89,10 +89,9 @@ class valorant(commands.Cog):
 
         img = Image.new('RGB', (600, 300), color = (6, 9, 23))
         draw = ImageDraw.Draw(img)
-        fontPath = os.path.abspath("fonts/")
-        print(fontPath+"\OpenSans-Regular.ttf", fontPath+"\OpenSans-Bold.ttf")
-        fnt = ImageFont.truetype(font=fontPath+"\OpenSans-Regular.ttf", size=20)
-        boldfnt = ImageFont.truetype(font=fontPath+"\OpenSans-Bold.ttf", size=45)
+
+        fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=20)
+        boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=45)
 
 
         #Draws the map image cropped on the top of the image
