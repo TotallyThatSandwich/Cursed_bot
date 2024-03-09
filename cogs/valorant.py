@@ -134,11 +134,12 @@ class valorant(commands.Cog):
 
         with open ("riotdetails.json", "r") as file:
             riotDetails = json.load(file)
-
             if not(str(interaction.user.id) in riotDetails):
-                return await interaction.response.send_message("You are not logged in!", ephemeral=True)
-            
+                return await interaction.followup.send("You are not logged in!", ephemeral=True)
+
             userAccount = riotDetails[str(interaction.user.id)]
+
+        
 
         fetchParameters = {
             "affinity": "ap",
@@ -162,10 +163,10 @@ class valorant(commands.Cog):
         
 
 
-    @app_commands.command(name="login", description="Login into your account")
-    @app_commands.describe(riotid = "Enter your Riot ID. If you leave it empty, it will delete your information.")
-    async def login(self, interaction:discord.Interaction, riotid:str, tag:int):
-        if(riotid == None):
+    @app_commands.command(name="login_for_valorant", description="Login into your account")
+    @app_commands.describe(username = "Enter your Valorant username. If you leave it empty, it will delete your information.")
+    async def login(self, interaction:discord.Interaction, username:str, tag:int):
+        if(username == None):
             with open("riotdetails.json", "r") as file:
                 riotDetails = json.load(file)
                 riotDetails.pop(str(interaction.user.id))
@@ -175,7 +176,7 @@ class valorant(commands.Cog):
             return await interaction.response.send_message("Deleting your information...", ephemeral=True, delete_after=10)
         
         fetchRequests = {
-            "name": riotid,
+            "name": username,
             "tag": str(tag)
         }
 
