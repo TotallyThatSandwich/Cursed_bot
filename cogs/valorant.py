@@ -174,13 +174,14 @@ class valorant(commands.Cog):
             
             return await interaction.response.send_message("Deleting your information...", ephemeral=True, delete_after=10)
         
+        
+        if("#" in str(tag)):
+            tag = tag.replace("#", "")
+        
         fetchRequests = {
             "name": username,
             "tag": str(tag)
         }
-
-        if("#" in tag):
-            tag = tag.replace("#", "")
 
 
         response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{fetchRequests['name']}/{fetchRequests['tag']}")
