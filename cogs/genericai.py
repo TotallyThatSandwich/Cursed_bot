@@ -85,7 +85,7 @@ class genericAI(commands.Cog):
                 response = await formatResponse(botQuery)
             await message.channel.send(response)
 
-        elif "reply" in str(message.type) and "1210389365185056818" in message.mentions or "1210512184103403530" in message.mentions:
+        elif "reply" in str(message.type) and ("1210389365185056818" in message.mentions or "1210512184103403530" in message.mentions) and not (str(message.author.id) in "1210389365185056818" or str(message.author.id) in "1210512184103403530"):
             reference = message.reference.message_id
             if reference.author.id in ["1210389365185056818", "1210512184103403530"]:
                 response = await formatResponse(botQuery)

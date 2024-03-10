@@ -62,19 +62,61 @@ class valorant(commands.Cog):
 
         self.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]})
 
+
+        def createTotalGameStatsImage(self, map:str, stats:dict, score:dict):
+            mapLoadScreens = {
+                "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
+                "Breeze": "https://static.wikia.nocookie.net/valorant/images/1/10/Loading_Screen_Breeze.png/revision/latest",
+                "Bind": "https://static.wikia.nocookie.net/valorant/images/2/23/Loading_Screen_Bind.png/revision/latest",
+                "Haven": "https://static.wikia.nocookie.net/valorant/images/7/70/Loading_Screen_Haven.png/revision/latest?cb=20200620202335",
+                "Split":"https://static.wikia.nocookie.net/valorant/images/d/d6/Loading_Screen_Split.png/revision/latest?cb=20230411161807",
+                "Pearl":"https://static.wikia.nocookie.net/valorant/images/a/af/Loading_Screen_Pearl.png/revision/latest?cb=20220622132842",
+                "Lotus": "https://static.wikia.nocookie.net/valorant/images/d/d0/Loading_Screen_Lotus.png/revision/latest?cb=20230106163526",
+                "Fracture": "https://static.wikia.nocookie.net/valorant/images/f/fc/Loading_Screen_Fracture.png/revision/latest?cb=20210908143656", 
+                "Sunset": "https://static.wikia.nocookie.net/valorant/images/5/5c/Loading_Screen_Sunset.png/revision/latest?cb=20230829125442",
+                "Icebox": "https://static.wikia.nocookie.net/valorant/images/1/13/Loading_Screen_Icebox.png/revision/latest"
+            }
+
+            mapLink = mapLoadScreens[map]
+            urllib.request.urlretrieve(mapLink, "map.png")
+            
+            for i in stats:
+                urllib.request.urlretrieve(stats[i]["agentPfp"], f"{i}.png")
+
+            img = Image.new('RGB', (600, 1200), color = (6, 9, 23))
+            draw = ImageDraw.Draw(img)
+
+            fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=20)
+            boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=45)
+
+            
+            #Draws the map image cropped on the top of the image
+            mapImage = Image.open("map.png")
+            mapImage = mapImage.resize([1200, 654])
+            mapImage = ImageChops.offset(mapImage, math.floor((mapImage.width)/2+100), math.floor((mapImage.height)/2+100))
+            mapImage = mapImage.crop((0,0, mapImage.width, 100))
+            img.paste(mapImage, (0,0))
+
+            # Draw the line dividing map image with stats
+            draw.line([(0,100),(img.width,100)], fill=(0,0,0), width=15)
+
+
+
+
+
     # function for creating an image to show your personal stats. Parameters are the map loading screen link, the agent picture link and the user stats
     def createUserStatsImage(self, map:str, agentPfp:str, userStats:dict, score:dict):
         mapLoadScreens = {
-            "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest/scale-to-width-down/1000?cb=20200607180020",
-            "Breeze": "https://static.wikia.nocookie.net/valorant/images/1/10/Loading_Screen_Breeze.png/revision/latest/scale-to-width-down/1200?cb=20210427160616",
-            "Bind": "https://static.wikia.nocookie.net/valorant/images/2/23/Loading_Screen_Bind.png/revision/latest/scale-to-width-down/1200?cb=20200620202316",
+            "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
+            "Breeze": "https://static.wikia.nocookie.net/valorant/images/1/10/Loading_Screen_Breeze.png/revision/latest",
+            "Bind": "https://static.wikia.nocookie.net/valorant/images/2/23/Loading_Screen_Bind.png/revision/latest",
             "Haven": "https://static.wikia.nocookie.net/valorant/images/7/70/Loading_Screen_Haven.png/revision/latest?cb=20200620202335",
             "Split":"https://static.wikia.nocookie.net/valorant/images/d/d6/Loading_Screen_Split.png/revision/latest?cb=20230411161807",
             "Pearl":"https://static.wikia.nocookie.net/valorant/images/a/af/Loading_Screen_Pearl.png/revision/latest?cb=20220622132842",
             "Lotus": "https://static.wikia.nocookie.net/valorant/images/d/d0/Loading_Screen_Lotus.png/revision/latest?cb=20230106163526",
             "Fracture": "https://static.wikia.nocookie.net/valorant/images/f/fc/Loading_Screen_Fracture.png/revision/latest?cb=20210908143656", 
             "Sunset": "https://static.wikia.nocookie.net/valorant/images/5/5c/Loading_Screen_Sunset.png/revision/latest?cb=20230829125442",
-            "Icebox": "https://static.wikia.nocookie.net/valorant/images/1/13/Loading_Screen_Icebox.png/revision/latest/scale-to-width-down/1000?cb=20201015084446"
+            "Icebox": "https://static.wikia.nocookie.net/valorant/images/1/13/Loading_Screen_Icebox.png/revision/latest"
         }
 
         if userStats["team"] == "Red":
@@ -92,16 +134,15 @@ class valorant(commands.Cog):
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=20)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=45)
 
-
         #Draws the map image cropped on the top of the image
         mapImage = Image.open("map.png")
         mapImage = mapImage.resize([1200, 654])
-        mapImage = ImageChops.offset(mapImage, 0, math.floor((mapImage.height)/2+100))
+        mapImage = ImageChops.offset(mapImage, math.floor((mapImage.width)/2+100), math.floor((mapImage.height)/2+100))
         mapImage = mapImage.crop((0,0, mapImage.width, 100))
         img.paste(mapImage, (0,0))
         
         #Draw the line dividing map image with stats
-        draw.line([(0,100),(img.width,100)], fill=(0,0,0), width=15)
+        #draw.line([(0,100),(img.width,100)], fill=(0,0,0), width=15)
 
         #Paste agent picture on the left side of the image
         agentProfilePicture = Image.open("agentPfp.png")
@@ -126,19 +167,26 @@ class valorant(commands.Cog):
         os.remove("agentPfp.png")
 
     @app_commands.command(name="get_latest_comp_game", description="Get your recent game stats")
-    async def getRecentGame(self, interaction: discord.Interaction):
+    @app_commands.describe(user = "Grab user's latest game. Optional.")
+    async def getRecentGame(self, interaction: discord.Interaction, user:discord.Member=None):
         await interaction.response.defer()
         URL = "https://api.henrikdev.xyz"
         userAccount = {}
 
         with open ("riotdetails.json", "r") as file:
             riotDetails = json.load(file)
-            if not(str(interaction.user.id) in riotDetails):
+
+            if str(interaction.user.id) not in riotDetails and user == None:
                 return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
-
-            userAccount = riotDetails[str(interaction.user.id)]
-
-        
+            
+            if user != None and str(user.id) not in riotDetails:
+                return await interaction.followup.send("User has not logged in yet!", ephemeral=True)
+            
+            if user == None:
+                userAccount = riotDetails[str(interaction.user.id)]
+            else:
+                userAccount = riotDetails[str(user.id)]
+            
 
         fetchParameters = {
             "affinity": "ap",
@@ -160,8 +208,6 @@ class valorant(commands.Cog):
         await interaction.followup.send(file=userStatsFile)
         os.remove("userStats.png")
         
-
-
     @app_commands.command(name="login_for_valorant", description="Login into your account")
     @app_commands.describe(username = "Enter your Valorant username. If you leave it empty, it will delete your information.")
     async def loginValorant(self, interaction:discord.Interaction, username:str, tag:str):
@@ -182,8 +228,6 @@ class valorant(commands.Cog):
             "name": username,
             "tag": str(tag)
         }
-
-
 
         response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{fetchRequests['name']}/{fetchRequests['tag']}")
         response = response.json()
