@@ -82,7 +82,7 @@ class valorant(commands.Cog):
                             "DD": math.floor((i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed)), #float -> int
                             "rank": i["currenttier_patched"], #string
                             "team": i["team"], #string
-                            "HS": f'{round(i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]+i["stats"]["legshots"])*100),2}%', #string because of % sign
+                            "HS": f'{round((i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]+i["stats"]["legshots"])*100),2)}%', #string because of % sign
                             "agent": i["character"], #string
                             "tag":i["tag"], #string
                             "agentPfp": i["assets"]["agent"]["small"] #string
@@ -111,7 +111,7 @@ class valorant(commands.Cog):
             "Icebox": "https://static.wikia.nocookie.net/valorant/images/1/13/Loading_Screen_Icebox.png/revision/latest"
         }
 
-        scoreLine = f"{score['Red']} - {score['Blue']}"
+        scoreLine = f"{score['Blue']} - {score['Red']}"
         mapLink = mapLoadScreens[map]
         urllib.request.urlretrieve(mapLink, "map.png")
 
