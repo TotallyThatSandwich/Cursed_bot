@@ -34,7 +34,6 @@ class botView(discord.ui.View):
     async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         if str(interaction.user.id) not in settings.DEV:
                 return await interaction.response.send_message("You do not have permission to use this command", delete_after=5)
-        
         try:
             os.remove("db.sqlite3")
         except Exception as e:
