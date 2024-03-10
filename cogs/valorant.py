@@ -180,7 +180,7 @@ class valorant(commands.Cog):
                 return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
             
             if user != None and str(user.id) not in riotDetails:
-                return await interaction.followup.send("User has not logged in yet!", ephemeral=True)
+                return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
             
             if user == None:
                 userAccount = riotDetails[str(interaction.user.id)]
@@ -245,8 +245,8 @@ class valorant(commands.Cog):
                 riotDetails.update({str(interaction.user.id): response})
                 with open ("riotdetails.json", "w") as file:
                     json.dump(riotDetails, file)
-                    await interaction.response.send_message("Logged in!", ephemeral=True)
-
+                    
+            await interaction.response.send_message("Logged in!", ephemeral=True)
         except Exception as e:
             with open ("riotdetails.json", "w+") as file:
                 riotDetails.update({str(interaction.user.id): response})
