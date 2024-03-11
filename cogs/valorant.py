@@ -321,22 +321,25 @@ class valorant(commands.Cog):
         URL = "https://api.henrikdev.xyz"
         userAccount = {}
 
-        with open ("riotdetails.json", "r") as file:
-            try:
-                riotDetails = json.load(file)
+        try:
+            with open ("riotdetails.json", "r") as file:
+                try:
+                    riotDetails = json.load(file)
 
-                if str(interaction.user.id) not in riotDetails and user == None:
-                    return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
-                
-                if user != None and str(user.id) not in riotDetails:
-                    return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
-                
-                if user == None:
-                    userAccount = riotDetails[str(interaction.user.id)]
-                else:
-                    userAccount = riotDetails[str(user.id)]
-            except:
-                return await interaction.response.send_message("Run /login_for_valorant before running this command!", ephemeral=True)
+                    if str(interaction.user.id) not in riotDetails and user == None:
+                        return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
+                    
+                    if user != None and str(user.id) not in riotDetails:
+                        return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
+                    
+                    if user == None:
+                        userAccount = riotDetails[str(interaction.user.id)]
+                    else:
+                        userAccount = riotDetails[str(user.id)]
+                except:
+                    return await interaction.response.send_message("Run /login_for_valorant before running this command!", ephemeral=True)
+        except:
+            return await interaction.response.send_message("Run /login_for_valorant before running this command!", ephemeral=True)
             
 
         fetchParameters = {
