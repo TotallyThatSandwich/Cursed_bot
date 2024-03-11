@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import app_commands
 import os
 import random
-import asyncio
 import sys
 import nltk
 from nltk import pos_tag
@@ -35,7 +34,7 @@ class react(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
 
-        if str(message.author.id) in ["1210389365185056818", "1210512184103403530"] and "reply" in str(message.type):
+        if str(message.author.id) in ["1210389365185056818", "1210512184103403530"] and "Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy." in message.content and "reply" in str(message.type):
                 if random.randint(1,2) == 1:
                     await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
 

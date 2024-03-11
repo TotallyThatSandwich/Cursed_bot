@@ -94,6 +94,7 @@ class Servers(commands.Cog):
                 name = server_name.lower()
 
                 address = servers[name]["link"]
+                ip = servers[name]["internal"]
                 other = servers[name]["other"]
                 colour = servers[name]["colour"]
                 img = servers[name]["img"]
@@ -102,7 +103,7 @@ class Servers(commands.Cog):
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
                 sock.settimeout(15)
-                result = sock.connect_ex((address,port))
+                result = sock.connect_ex((ip,port))
 
                 if result == 0:
                     status =  'UP'

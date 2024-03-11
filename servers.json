@@ -1,6 +1,7 @@
 {
     "minecraft": {
         "link": "minecraft.genericcursed.com",
+        "internal": "192.168.20.9",
         "other": "server has whitelist, contact <@948124346092781608> for access",
         "colour": "0x33cc33",
         "img": "https://preview.redd.it/avjal33hpqo61.png?width=512&format=png&auto=webp&s=b652d83347448df74c8ba61c17b322e686ee32a4",
@@ -8,6 +9,7 @@
     },
     "css": {
         "link": "css.genericcursed.com",
+        "internal": "192.168.20.9",
         "other": "use connect command in CSS to join",
         "colour": "0x636363",
         "img": "https://icons.veryicon.com/png/Game/The%20Orange%20Box/Counter%20Strike.png",
