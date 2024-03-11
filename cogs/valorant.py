@@ -55,7 +55,8 @@ class valorant(commands.Cog):
 
                     with open("recentGames.txt", "a+") as file:
                         for i in recentGames:
-                            file.write(f" {i},")
+                            if i != "":
+                                file.write(f" {i},")
 
     def formatMatchEmbed(self, messageid, response=None, puuid=None):       
         finalGameStats = {}
