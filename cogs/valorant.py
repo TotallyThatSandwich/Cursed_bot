@@ -45,14 +45,17 @@ class valorant(commands.Cog):
             # not sure why reading lines include the \n as a part of the string?
             print("finding " + messageID + " in " + str(recentGames))
             if messageID in recentGames:
-                recentGames = recentGames.remove(messageID)
+                recentGames.remove(messageID)
                 print("removing", f"userStats{message.id}.png and gameStats{message.id}.png")
                 os.remove(f"userStats{message.id}.png")
                 os.remove(f"gameStats{message.id}.png")
                 
-                with open("recentGames.txt", "a+") as file:
-                    for i in recentGames:
-                        file.write(f" {i},")
+                with open("recentGames.txt", "w") as file:
+                    file.write("")
+
+                    with open("recentGames.txt", "a+") as file:
+                        for i in recentGames:
+                            file.write(f" {i},")
 
     def formatMatchEmbed(self, messageid, response=None, puuid=None):       
         finalGameStats = {}
@@ -153,8 +156,8 @@ class valorant(commands.Cog):
 
         #Draws the map image cropped on the top of the image
         mapImage = Image.open("map.png")
-        mapImage = mapImage.resize([1200, 654])
-        mapImage = ImageChops.offset(mapImage, math.floor((mapImage.width)/2+100), math.floor((mapImage.height)/2+100))
+        mapImage = mapImage.resize([800, 454])
+        mapImage = ImageChops.offset(mapImage, math.floor((mapImage.width)/2), math.floor((mapImage.height)/2))
         mapImage = mapImage.crop((0,0, mapImage.width, 100))
         img.paste(mapImage, (0,0))
 
@@ -318,18 +321,21 @@ class valorant(commands.Cog):
         userAccount = {}
 
         with open ("riotdetails.json", "r") as file:
-            riotDetails = json.load(file)
+            try:
+                riotDetails = json.load(file)
 
-            if str(interaction.user.id) not in riotDetails and user == None:
-                return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
-            
-            if user != None and str(user.id) not in riotDetails:
-                return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
-            
-            if user == None:
-                userAccount = riotDetails[str(interaction.user.id)]
-            else:
-                userAccount = riotDetails[str(user.id)]
+                if str(interaction.user.id) not in riotDetails and user == None:
+                    return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
+                
+                if user != None and str(user.id) not in riotDetails:
+                    return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
+                
+                if user == None:
+                    userAccount = riotDetails[str(interaction.user.id)]
+                else:
+                    userAccount = riotDetails[str(user.id)]
+            except:
+                return await interaction.response.send_message("Run /login_for_valorant before running this command!", ephemeral=True)
             
 
         fetchParameters = {
