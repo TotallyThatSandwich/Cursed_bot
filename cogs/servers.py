@@ -55,22 +55,25 @@ class Servers(commands.Cog):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        
-        with open("servers.json", "w") as f:
-            servers = json.load(f)
+        try:
+            with open("servers.json", "r") as f:
+                servers = json.load(f)
 
-        address, port = self.address.split(":")
+            address, port = self.address.split(":")
 
-        servers[self.server_name] = {
-            "link": address,
-            "port": port,
-            "colour": self.colour,
-            "img": self.img,
-            "other": self.other
-        }
+            servers[self.server_name] = {
+                "link": address,
+                "port": port,
+                "colour": self.colour,
+                "img": self.img,
+                "other": self.other
+            }
 
-        with open("servers.json", "w") as f:
-            json.dump(servers, f, indent=4)
+            with open("servers.json", "w") as a:
+                json.dump(servers, f, indent=4)
+        except Exception as e:
+            print(e)
+            await interaction.response.send_message(f"An error occured: {e}", ephemeral=True)
 
         await interaction.response.send_message(f"Server {self.server_name} added", ephemeral=True)
 
@@ -138,6 +141,7 @@ class Servers(commands.Cog):
     @app_commands.command(name="add_server", description="add server to server list")
     async def add_server(self, interaction: discord.Interaction):
         add_server = self.addServer()
+        add_server.user = interaction.user
         await interaction.response.send_modal(add_server)
 async def setup(bot):
     await bot.add_cog(Servers(bot))
