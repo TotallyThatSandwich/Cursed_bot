@@ -94,10 +94,16 @@ class genericAI(commands.Cog):
         if "reply" in str(message.type):
             repliedMessage = await message.channel.fetch_message(message.reference.message_id)
 
-            if str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530" and (message.author.id != "1210389365185056818" or message.author.id != "1210512184103403530"):
+            if str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530" and message.author.id != "1210389365185056818" and message.author.id != "1210512184103403530":
                 response = await formatResponse(botQuery)
                 return await message.channel.send(response)
             elif not("1210389365185056818" in str(repliedMessage.content) or "1210512184103403530" in str(repliedMessage.content) or repliedMessage.author.id == message.author.id):
+                with open("blacklist.txt", "r") as blacklist:
+                    blacklist = blacklist.readlines()
+                    for i in blacklist:
+                        if i == message.author.id:
+                            return 
+                        
                 trainer.train([repliedMessage.content, message.content])
                 print(f"training bot with {[repliedMessage.content, message.content]}")
                 logger.info(f"Training bot with {[repliedMessage.content, message.content]}")
@@ -146,7 +152,7 @@ class genericAI(commands.Cog):
         blacklist.write(f"{user.id}\n")
         blacklist.close()
         
-        await interaction.response.send_message(f"User {user.name} has been blacklisted")
+        await interaction.response.send_message(f"User {user.name} has been blacklisted", ephemeral=True, delete_after=5)
 
     @app_commands.command(name="unblacklist_user", description="unblock a user from training the bot")
     @app_commands.describe(user = "The user to unblock")
@@ -164,7 +170,7 @@ class genericAI(commands.Cog):
         blacklist.write("".join(blacklist, "\n"))
         blacklist.close()
 
-        await interaction.response.send_message(f"User {user.name} has been unblacklisted")
+        await interaction.response.send_message(f"User {user.name} has been unblacklisted", ephemeral=True, delete_after=5)
 
     @app_commands.command(name="delete_database", description="Delete the bot's database")
     async def deleteDatabase(self, interaction: discord.Interaction):
