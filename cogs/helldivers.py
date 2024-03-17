@@ -30,8 +30,6 @@ class helldivers(commands.Cog):
                     health = planet_info["health"]
                     max_health = planet_info["planet"]["max_health"]
 
-                    
-
                     planetsInfo[Name] = {
                         "players": players,
                         "owner": owner,
@@ -40,8 +38,7 @@ class helldivers(commands.Cog):
                         "health": health,
                         "max_health": max_health
                     }
-                    
-
+                
                 else:
                    return
 
@@ -52,6 +49,8 @@ class helldivers(commands.Cog):
 
     @app_commands.command(name="democtatic_status", description="get helldivers 2 campaign Status")
     async def democtaticStatus(self, interaction: discord.Interaction):
+
+        interaction.response.defer()
 
         planetsInfo = await self.get_info()
         if planetsInfo:
@@ -79,14 +78,10 @@ class helldivers(commands.Cog):
 
                 embed.add_field(name=f"¤ {planet}", value=f"◦ <:Helldivers:1217749645795655680> Active Helldivers •`{players}`\n◦ {enemy} Liberation • `{liberation}%`\n◦ :heart: Health • `{health}/{max_health}({round(health_perc, 2)}%)`", inline=False)
 
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
 
         else:
-            await interaction.response.send_message(f"Failed to fetch planets data", ephemeral=True)
-    
-    #@commands.Cog.listener()
-    #async def on_message(self, message):
-    #    print(message.content)
+            await interaction.followup.send()(f"Failed to fetch planets data", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(helldivers(bot))
