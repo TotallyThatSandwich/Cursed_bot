@@ -50,7 +50,7 @@ class helldivers(commands.Cog):
     @app_commands.command(name="democtatic_status", description="get helldivers 2 campaign Status")
     async def democtaticStatus(self, interaction: discord.Interaction):
 
-        interaction.response.defer()
+        await interaction.response.defer()
 
         planetsInfo = await self.get_info()
         if planetsInfo:
