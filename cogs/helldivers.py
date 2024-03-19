@@ -10,7 +10,7 @@ class helldivers(commands.Cog):
     async def get_planet_info(self):
         planetsInfo = {}
 
-        response = requests.get("https://api.genericcursed.com//api/801/status")
+        response = requests.get("https://api.genericcursed.com/api/801/status")
         if response.status_code == 200:
             info = response.json()
             
@@ -18,7 +18,7 @@ class helldivers(commands.Cog):
 
                 planer_id = i["planet"]["index"]
 
-                response_planet = requests.get(f"https://api.genericcursed.com//api/801/planets/{planer_id}/status")
+                response_planet = requests.get(f"https://api.genericcursed.com/api/801/planets/{planer_id}/status")
                 if response_planet.status_code == 200:
                     planet_info = response_planet.json()
                     
@@ -49,6 +49,7 @@ class helldivers(commands.Cog):
 
     @app_commands.command(name="democtatic_status", description="get helldivers 2 campaign Status")
     async def democtaticStatus(self, interaction: discord.Interaction):
+
 
         await interaction.response.defer()
 
