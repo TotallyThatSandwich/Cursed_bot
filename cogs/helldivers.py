@@ -7,10 +7,10 @@ class helldivers(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def get_info(self):
+    async def get_planet_info(self):
         planetsInfo = {}
 
-        response = requests.get("http://192.168.20.10:4000/api/801/status")
+        response = requests.get("https://api.genericcursed.com//api/801/status")
         if response.status_code == 200:
             info = response.json()
             
@@ -18,7 +18,7 @@ class helldivers(commands.Cog):
 
                 planer_id = i["planet"]["index"]
 
-                response_planet = requests.get(f"http://192.168.20.10:4000/api/801/planets/{planer_id}/status")
+                response_planet = requests.get(f"https://api.genericcursed.com//api/801/planets/{planer_id}/status")
                 if response_planet.status_code == 200:
                     planet_info = response_planet.json()
                     
@@ -52,7 +52,7 @@ class helldivers(commands.Cog):
 
         await interaction.response.defer()
 
-        planetsInfo = await self.get_info()
+        planetsInfo = await self.get_planet_info()
         if planetsInfo:
 
             concurrent_players = 0
