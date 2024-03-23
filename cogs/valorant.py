@@ -97,7 +97,7 @@ class valorant(commands.Cog):
         print(json.dumps(finalGameStats, indent=4))
         personalUserStats = finalGameStats[requestedUser["name"]]
 
-        self.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid)
+        self.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid, requestedUser["name"])
         self.createTotalGameStatsImage(matchDetails["map"], finalGameStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid)
 
     # function for creating an image to show the stats of the game. Parameters are the map name, the stats of the players and the score of the game
@@ -115,6 +115,31 @@ class valorant(commands.Cog):
             "Icebox": "https://static.wikia.nocookie.net/valorant/images/1/13/Loading_Screen_Icebox.png/revision/latest"
         }
 
+        ranks = {
+            "Iron 1": "images/valorantRanks/Iron_1_Rank.png",
+            "Iron 2": "images/valorantRanks/Iron_2_Rank.png",
+            "Iron 3": "images/valorantRanks/Iron_3_Rank.png",
+            "Bronze 1": "images/valorantRanks/Bronze_1_Rank.png",
+            "Bronze 2": "images/valorantRanks/Bronze_2_Rank.png",
+            "Bronze 3": "images/valorantRanks/Bronze_3_Rank.png",
+            "Silver 1": "images/valorantRanks/Silver_1_Rank.png",
+            "Silver 2": "images/valorantRanks/Silver_2_Rank.png",
+            "Silver 3": "images/valorantRanks/Silver_3_Rank.png",
+            "Gold 1": "images/valorantRanks/Gold_1_Rank.png",
+            "Gold 2": "images/valorantRanks/Gold_2_Rank.png",
+            "Gold 3": "images/valorantRanks/Gold_3_Rank.png",
+            "Platinum 1": "images/valorantRanks/Platinum_1_Rank.png",
+            "Platinum 2": "images/valorantRanks/Platinum_2_Rank.png",
+            "Platinum 3": "images/valorantRanks/Platinum_3_Rank.png",
+            "Diamond 1": "images/valorantRanks/Diamond_1_Rank.png",
+            "Diamond 2": "images/valorantRanks/Diamond_2_Rank.png",
+            "Diamond 3": "images/valorantRanks/Diamond_3_Rank.png",
+            "Immortal 1": "images/valorantRanks/Immortal_1_Rank.png",
+            "Immortal 2": "images/valorantRanks/Immortal_2_Rank.png",
+            "Immortal 3": "images/valorantRanks/Immortal_3_Rank.png",
+            "Radiant": "images/valorantRanks/Radiant_Rank.png"
+        }
+
         scoreLine = f"{score['Blue']} - {score['Red']}"
         mapLink = mapLoadScreens[map]
         urllib.request.urlretrieve(mapLink, "map.png")
@@ -122,7 +147,7 @@ class valorant(commands.Cog):
         img = Image.new('RGB', (800, 1200), color = (6, 9, 23))
         draw = ImageDraw.Draw(img)
 
-        fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=15)
+        fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=17)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=80)
 
         def sortLowestToHighest(arr, stat):
@@ -158,7 +183,7 @@ class valorant(commands.Cog):
         #Draws the map image cropped on the top of the image
         mapImage = Image.open("map.png")
         mapImage = mapImage.resize([800, 454])
-        mapImage = ImageChops.offset(mapImage, math.floor((mapImage.width)/2), math.floor((mapImage.height)/2))
+        mapImage = ImageChops.offset(mapImage, mapImage.width, math.floor((mapImage.height)/2))
         mapImage = mapImage.crop((0,0, mapImage.width, 100))
         img.paste(mapImage, (0,0))
 
@@ -191,7 +216,10 @@ class valorant(commands.Cog):
             draw.text((105, 170+(i*100)), f"{name}: {stats[blue_team[i]]['tag']}", font=fnt, fill=(255,255,255))
 
             #draw rank
-            draw.text((105, 190+(i*100)), f"{stats[blue_team[i]]['rank']}", font=fnt, fill=(255,255,255))
+            rankImage = Image.open(ranks[stats[blue_team[i]]["rank"]])
+            rankImage = rankImage.resize([50, 50])
+            img.paste(rankImage, (105, 195+(i*100)))
+            #draw.text((105, 190+(i*100)), f"{stats[blue_team[i]]['rank']}", font=fnt, fill=(255,255,255))
 
             #draw KDA
             draw.text((300, 170+(i*100)), f"{stats[blue_team[i]]['KDA']}", font=fnt, fill=(255,255,255))
@@ -210,6 +238,7 @@ class valorant(commands.Cog):
 
         draw.line([(0,150+(blueTeamPlayerCount*100)),(img.width,150+(blueTeamPlayerCount*100))], fill=(33,38,46), width=5)
         draw.rectangle([(img.width, 150+(blueTeamPlayerCount*100)), (img.width, 150+(blueTeamPlayerCount*100))],fill=(59, 19, 19), outline=(33, 38, 46))
+        
         for i in range(redTeamPlayerCount):
             urllib.request.urlretrieve(stats[red_team[i]]["agentPfp"], f"agentPfp{i+6}.png")
             agentPfp = Image.open(f"agentPfp{i+6}.png")
@@ -224,7 +253,11 @@ class valorant(commands.Cog):
             draw.text((105, 670+(i*100)), f"{name}:#{stats[red_team[i]]['tag']}", font=fnt, fill=(255,255,255))
 
             #draw rank
-            draw.text((105, 690+(i*100)), f"{stats[red_team[i]]['rank']}", font=fnt, fill=(255,255,255))
+            rankImage = Image.open(ranks[stats[red_team[i]]["rank"]])
+            rankImage = rankImage.resize([45, 45])
+            img.paste(rankImage, (105, 695+(i*100)))
+
+            #draw.text((105, 690+(i*100)), f"{stats[red_team[i]]['rank']}", font=fnt, fill=(255,255,255))
 
             #draw KDA
             draw.text((300, 670+(i*100)), f"{stats[red_team[i]]['KDA']}", font=fnt, fill=(255,255,255))
@@ -252,7 +285,7 @@ class valorant(commands.Cog):
 
 
     # function for creating an image to show your personal stats. Parameters are the map name, the agent picture link, user stats and the score in the format of {"Red": 0, "Blue": 0}
-    def createUserStatsImage(self, map:str, agentPfp:str, userStats:dict, score:dict, messageId):
+    def createUserStatsImage(self, map:str, agentPfp:str, userStats:dict, score:dict, messageId, username):
         mapLoadScreens = {
             "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
             "Breeze": "https://static.wikia.nocookie.net/valorant/images/1/10/Loading_Screen_Breeze.png/revision/latest",
@@ -415,6 +448,20 @@ class valorant(commands.Cog):
                 json.dump(riotDetails, file)
         
             await interaction.response.send_message("Logged in!", ephemeral=True)
+
+    @app_commands.command(name="dev_valorant_clear", description="Clears the recent games list and any images that wasn't deleted")
+    async def clearRecentGames(self, interaction:discord.Interaction):
+        if str(interaction.user.id) not in settings.DEV:
+            return await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+        with open("recentGames.txt", "w") as file:
+            file.write("")
+
+        for i in os.listdir(os.getcwd()):
+            if "userStats" in i or "gameStats" in i:
+                os.remove(i)
+
+        await interaction.response.send_message("Cleared recent games list and images", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(valorant(bot))
