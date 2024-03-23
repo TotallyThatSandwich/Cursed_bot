@@ -30,9 +30,11 @@ class react(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
+    
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        print(str(message.channel.name).lower())
 
         if str(message.author.id) in ["1210389365185056818", "1210512184103403530"] and "Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy." in message.content and "reply" in str(message.type):
                 if random.randint(1,2) == 1:
@@ -114,18 +116,17 @@ class react(commands.Cog):
         
         if "is so good" in messageContent and str(message.channel.name).lower() in competitiveShooters:
             player = messageContent.split("is so good")
+            player = player[0]
+            player = player.replace(" ", "")
 
-            print(player)
-            player = player.split()
-
-            playerName = ""
-            for i in player[len(player)-1]:
-                if str(i).isalpha():
-                    playerName = "".join([playerName, i])
+            # playerName = ""
+            # for i in player[len(player)-1]:
+            #     if str(i).isalpha():
+            #         playerName = "".join([playerName, i])
             
-            print(playerName)
+            #print(playerName)
 
-            await message.reply(f"This {playerName} player is fantastic. Just needs to work on communication, aim, map awareness, crosshair placement, economy management, pistol aim, awp flicks, grenade spots, smoke spots, pop flashes, positioning, bomb plant positions, retake ability, bunny hopping, spray control and getting a kill.")
+            await message.reply(f"This {player} player is fantastic. Just needs to work on communication, aim, map awareness, crosshair placement, economy management, pistol aim, awp flicks, grenade spots, smoke spots, pop flashes, positioning, bomb plant positions, retake ability, bunny hopping, spray control and getting a kill.")
         
         if random.randint(1, 100) == 1:
             await message.reply(randomCopypastas[random.randint(0, len(randomCopypastas)-1)])
