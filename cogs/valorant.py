@@ -314,6 +314,7 @@ class valorant(commands.Cog):
         draw = ImageDraw.Draw(img)
 
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=20)
+        userfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=15)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=45)
 
         #Draws the map image cropped on the top of the image
@@ -332,7 +333,10 @@ class valorant(commands.Cog):
         img.paste(agentProfilePicture, (0,108))
 
         #Place player stats on the right of the agent picture
-        draw.rectangle([(agentProfilePicture.width + 10, img.width), (666, img.width)],fill=(0,0,0), outline=(33, 38, 46))
+        draw.rectangle([(agentProfilePicture.width + 20, img.width), (666, img.width)],fill=(0,0,0), outline=(33, 38, 46))
+        #Username
+        draw.text((agentProfilePicture.width + 20, 100), f"{username}", fill=(255,255,255), font=userfnt)
+        #Scoreline
         draw.text((agentProfilePicture.width + 20, 110), f"{scoreboard}", fill=(255,255,255), font=boldfnt)
         #KDA
         draw.text((agentProfilePicture.width + 20, 190), "KDA", fill=(255,255,255), font=fnt)
@@ -472,6 +476,37 @@ class valorant(commands.Cog):
                 os.remove(i)
 
         await interaction.response.send_message("Cleared recent games list and images", ephemeral=True)
+
+    def formatGCGSvalTeamEmbed(information):
+        # creates a new image with GCGSval team
+        img = img.new('RGB', (800, 1200), color = (6, 9, 23))
+
+    @app_commands.command(name="GCGS_premier", description="Get information on the Generic Cursed Valorant team!")
+    async def getGCGSVAL(self, interaction:discord.Interaction):
+        if str(interaction.user.id) not in settings.DEV:
+            return await interaction.response.send_message("This command is a work in progress!", ephemeral=True)
+        
+        interaction.response.defer()
+        team = {}
+
+        response = requests.get(url="https://api.henrikdev.xyz/valorant/v1/premier/search?name=GCGSval&tag=GCVT")
+        response = response.json()
+
+        if(response["status"] != 200):
+            return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
+        
+        for i in response["data"]:
+            if i["name"] == "GCGSval":
+                team = i
+
+        embed = self.formatGCGSvalTeamEmbed(team)
+        await interaction.response.send_message(embed=embed)
+
+        await message.edit(delete_after=600)
+        message = message.id
+
+        with open("recentGames.txt", "a+") as file:
+            file.write(f" {message},")
 
 async def setup(bot):
     await bot.add_cog(valorant(bot))
