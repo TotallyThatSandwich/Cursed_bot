@@ -481,7 +481,7 @@ class valorant(commands.Cog):
         # creates a new image with GCGSval team
         img = img.new('RGB', (800, 1200), color = (6, 9, 23))
 
-    @app_commands.command(name="GCGS_premier", description="Get information on the Generic Cursed Valorant team!")
+    @app_commands.command(name="gcgs_premier", description="Get information on the Generic Cursed Valorant team!")
     async def getGCGSVAL(self, interaction:discord.Interaction):
         if str(interaction.user.id) not in settings.DEV:
             return await interaction.response.send_message("This command is a work in progress!", ephemeral=True)
