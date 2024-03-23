@@ -216,9 +216,10 @@ class valorant(commands.Cog):
             draw.text((105, 170+(i*100)), f"{name}: {stats[blue_team[i]]['tag']}", font=fnt, fill=(255,255,255))
 
             #draw rank
-            rankImage = Image.open(ranks[stats[blue_team[i]]["rank"]])
-            rankImage = rankImage.resize([50, 50])
-            img.paste(rankImage, (105, 195+(i*100)))
+            if(stats[blue_team[i]]["rank"]) != "Unrated":
+                rankImage = Image.open(ranks[stats[blue_team[i]]["rank"]])
+                rankImage = rankImage.resize([50, 50])
+                img.paste(rankImage, (105, 195+(i*100)))
             #draw.text((105, 190+(i*100)), f"{stats[blue_team[i]]['rank']}", font=fnt, fill=(255,255,255))
 
             #draw KDA
@@ -253,9 +254,10 @@ class valorant(commands.Cog):
             draw.text((105, 670+(i*100)), f"{name}:#{stats[red_team[i]]['tag']}", font=fnt, fill=(255,255,255))
 
             #draw rank
-            rankImage = Image.open(ranks[stats[red_team[i]]["rank"]])
-            rankImage = rankImage.resize([45, 45])
-            img.paste(rankImage, (105, 695+(i*100)))
+            if(red_team[i]["rank"]) != "Unrated":
+                rankImage = Image.open(ranks[stats[red_team[i]]["rank"]])
+                rankImage = rankImage.resize([45, 45])
+                img.paste(rankImage, (105, 695+(i*100)))
 
             #draw.text((105, 690+(i*100)), f"{stats[red_team[i]]['rank']}", font=fnt, fill=(255,255,255))
 
