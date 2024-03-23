@@ -254,7 +254,7 @@ class valorant(commands.Cog):
             draw.text((105, 670+(i*100)), f"{name}:#{stats[red_team[i]]['tag']}", font=fnt, fill=(255,255,255))
 
             #draw rank
-            if(red_team[i]["rank"]) != "Unrated":
+            if(stats[red_team[i]]["rank"]) != "Unrated":
                 rankImage = Image.open(ranks[stats[red_team[i]]["rank"]])
                 rankImage = rankImage.resize([45, 45])
                 img.paste(rankImage, (105, 695+(i*100)))
