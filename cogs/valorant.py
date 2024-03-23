@@ -401,7 +401,15 @@ class valorant(commands.Cog):
         with open("recentGames.txt", "a+") as file:
             file.write(f" {message},")
         
-        
+    @app_commands.command(name="valorant_gcvt", description="Get information on the Generic Cursed Valorant Team")
+    async def getGenericValTeam(self, interaction:discord.Interaction):
+        URL = "https://api.henrikdev.xyz"
+        interaction.response.defer()
+
+        fetchParameters = {}
+
+
+
         
     @app_commands.command(name="login_for_valorant", description="Login into your account")
     @app_commands.describe(username = "Enter your Valorant username. If you leave it empty, it will delete your information.")
