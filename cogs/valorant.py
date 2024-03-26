@@ -213,7 +213,7 @@ class valorant(commands.Cog):
                 name = str(blue_team[i][:12]) + "..."
             else:
                 name = blue_team[i]
-            draw.text((105, 170+(i*100)), f"{name}: {stats[blue_team[i]]['tag']}", font=fnt, fill=(255,255,255))
+            draw.text((105, 170+(i*100)), f"{name}: #{stats[blue_team[i]]['tag']}", font=fnt, fill=(255,255,255))
 
             #draw rank
             if(stats[blue_team[i]]["rank"]) != "Unrated":
@@ -477,9 +477,15 @@ class valorant(commands.Cog):
 
         await interaction.response.send_message("Cleared recent games list and images", ephemeral=True)
 
-    def formatGCGSvalTeamEmbed(information):
-        # creates a new image with GCGSval team
-        img = img.new('RGB', (800, 1200), color = (6, 9, 23))
+    def formatTeamInfo(information):
+        description = [f"name: {information['name']}#{information['tag']}",
+                       f"win/loss: {information['wins']}",
+                       f"score: {information['score']}/675",
+                       f"standings: {information['ranking']}"
+                       ]
+        
+        description = "\n".join(description)
+        embed = discord.Embed(title="Generic Cursed Valorant Team", description=description)
 
     @app_commands.command(name="gcgs_premier", description="Get information on the Generic Cursed Valorant team!")
     async def getGCGSVAL(self, interaction:discord.Interaction):
@@ -499,7 +505,7 @@ class valorant(commands.Cog):
             if i["name"] == "GCGSval":
                 team = i
 
-        embed = self.formatGCGSvalTeamEmbed(team)
+        embed = self.formatTeamInfo(team)
         await interaction.response.send_message(embed=embed)
 
         await message.edit(delete_after=600)
