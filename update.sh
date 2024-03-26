@@ -28,8 +28,8 @@ if [ "$TYPE" == "update cogs" ]; then
 
     clear
 
-    git fetch origin develop
-    git checkout origin/develop -- cogs/
+    git fetch origin main
+    git checkout origin/main -- cogs/
 
     echo ""
     echo "Updated cogs"
@@ -58,8 +58,8 @@ elif [ "$TYPE" == "update main.py" ]; then
 
     clear
 
-    git fetch origin develop
-    git checkout origin/develop -- main.py
+    git fetch origin main
+    git checkout origin/main -- main.py
     echo ""
     echo "Updated main.py"
     echo ""
