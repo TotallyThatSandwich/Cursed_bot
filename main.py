@@ -78,3 +78,5 @@ async def pull(ctx):
 
 
 bot.run(settings.TOKEN, root_logger=True)
+
+# test
