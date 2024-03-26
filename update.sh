@@ -71,7 +71,7 @@ elif [ "$TYPE" == "restart bot" ]; then
     sleep 3
     PID=$(ps ax | grep /home/docker/Cursed_bot/main.py | head -n 1 | awk '{print $1}')
     kill $PID
-    nohup python3 /home/docker/Cursed_bot/main.py && clear
+    nohup python3 /home/docker/Cursed_bot/main.py & clear
 
     echo "bot restarted"
 
@@ -90,7 +90,7 @@ if [ "$RESTART" == "Yes" ]; then
     sleep 3
     PID=$(ps ax | grep /home/docker/Cursed_bot/main.py | head -n 1 | awk '{print $1}')
     kill $PID
-    nohup python3 /home/docker/Cursed_bot/main.py && clear
+    nohup python3 /home/docker/Cursed_bot/main.py & clear
 
     echo "bot restarted"
 fi
