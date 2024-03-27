@@ -477,42 +477,70 @@ class valorant(commands.Cog):
 
         await interaction.response.send_message("Cleared recent games list and images", ephemeral=True)
 
-    def formatTeamInfo(information):
-        description = [f"name: {information['name']}#{information['tag']}",
-                       f"win/loss: {information['wins']}",
-                       f"score: {information['score']}/675",
-                       f"standings: {information['ranking']}"
+    def formatTeamInfo(self, information):
+        description = [f"**Name:** {information['name']}#{information['tag']}",
+                       f"**Win/loss:** {information['wins']}/{information['losses']}",
+                       f"**Score:** {information['score']}/675",
+                       f"**Standings:** {information['ranking']}"
                        ]
         
         description = "\n".join(description)
-        embed = discord.Embed(title="Generic Cursed Valorant Team", description=description)
+        embed = discord.Embed(title=f"{information['name']}", description=description)
+        embed.set_thumbnail(url=information["customization"]["image"])
+        embed = embed.set_footer(text="This a work in progress embed. Currently, the API's premier function is not working, so this is the workaround for now.")
+
+        return embed
 
     @app_commands.command(name="gcgs_premier", description="Get information on the Generic Cursed Valorant team!")
     async def getGCGSVAL(self, interaction:discord.Interaction):
         if str(interaction.user.id) not in settings.DEV:
             return await interaction.response.send_message("This command is a work in progress!", ephemeral=True)
         
-        interaction.response.defer()
+        await interaction.response.defer()
         team = {}
 
         response = requests.get(url="https://api.henrikdev.xyz/valorant/v1/premier/search?name=GCGSval&tag=GCVT")
         response = response.json()
 
         if(response["status"] != 200):
-            return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
+            return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
         
         for i in response["data"]:
             if i["name"] == "GCGSval":
                 team = i
 
         embed = self.formatTeamInfo(team)
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
-        await message.edit(delete_after=600)
-        message = message.id
+    @app_commands.command(name="get_premier_team", description="Get information on a premier team")
+    @app_commands.describe(team_name = "The team you want to get information on", tag = "The tag of the team")
+    async def getPremierTeam(self, interaction:discord.Interaction, team_name:str, tag:str=None):
+        await interaction.response.defer()
+        team = {}
+        if tag != None:
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}")
+        else:
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}&tag={tag}")
 
-        with open("recentGames.txt", "a+") as file:
-            file.write(f" {message},")
+        response = response.json()
+
+        if(response["status"] != 200):
+            return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
+        
+
+        print(json.dumps(response, indent=4))
+        for i in response["data"]:
+            try:
+                if str(i["name"]).lower() == team_name.lower():
+                    team = i
+            except:
+                continue
+        
+        if team != {}:
+            embed = self.formatTeamInfo(team)
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.followup.send(f"{team_name} not found")
 
 async def setup(bot):
     await bot.add_cog(valorant(bot))
