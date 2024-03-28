@@ -58,6 +58,70 @@ class valorant(commands.Cog):
                             if i != "":
                                 file.write(f" {i},")
 
+    #SECTION: Get user stats from match history etc
+    
+    def calculateUserStatsFromGames(self, response):
+        userStats = {}
+        gameStats = {}
+        for i in response["data"]:
+            matchDetails = i["metadata"]
+            playerDetails = i["players"]["all_players"]
+            teamDetails = i["teams"]
+
+            totalRoundsPlayed = teamDetails["red"]["rounds_won"] + teamDetails["blue"]["rounds_won"]
+            
+            gameStats.update({i:{
+                "kills": i["stats"]["kills"], #int
+                "deaths": i["stats"]["deaths"], #int
+                "assists": i["stats"]["assists"], #int
+                "KDA": f'{i["stats"]["kills"]}/{i["stats"]["deaths"]}/{i["stats"]["assists"]}', #string
+                "KDR": i["stats"]["kills"]/i["stats"]["deaths"], #float
+                "ACS": round((i["stats"]["score"]/totalRoundsPlayed), 2), #float
+                "ADR": round((i["damage_made"]/totalRoundsPlayed),2), #float
+                "DD": math.floor((i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed)), #float -> int
+                "rank": i["currenttier_patched"], #string
+                "team": i["team"], #string
+                "HS": f'{round((i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]+i["stats"]["legshots"])*100),2)}%', #string because of % sign
+                "agent": i["character"], #string
+                "tag":i["tag"], #string
+                "agentPfp": i["assets"]["agent"]["small"] #string
+            }})
+
+    @app_commands.command(name="get_games", description="Get your valorant stats")
+    @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 20.")
+    async def getGames(self, interaction:discord.Interaction, user:discord.Member=None, amount:int=7):
+        await interaction.response.defer()
+        if amount > 20 or amount < 1:
+            return await interaction.followup.send("Amount of games cannot exceed 20 or be under 1", ephemeral=True)
+        URL = "https://api.henrikdev.xyz"
+        userAccount = {}
+
+        if os.path.exists("riotdetails.json"):
+            with open("riotdetails.json", "r") as file:
+                    riotDetails = json.load(file)
+                    try:
+                        if user == None:
+                            userAccount = riotDetails[str(interaction.user.id)]
+                        else:
+                            userAccount = riotDetails[str(user.id)]
+                    except KeyError:
+                        return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
+        else:
+            return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
+        
+        response = requests.get(URL=f"{URL}/valorant/v3/by-puuid/matches/ap/{userAccount['data']['puuid']}?size={amount}")
+        response = response.json()
+
+        if(response["status"] != 200):
+            return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
+        
+        self.calculateUserStatsFromGames(response)
+
+            
+
+
+    #SECTION: Create stat images from match data
+    # Function for formatting images from match data. Use this to create the images for the match data, not the other functions.
     def formatMatchEmbed(self, messageid, response=None, puuid=None):       
         finalGameStats = {}
         
@@ -99,8 +163,8 @@ class valorant(commands.Cog):
 
         self.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid, requestedUser["name"])
         self.createTotalGameStatsImage(matchDetails["map"], finalGameStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid)
-
-    # function for creating an image to show the stats of the game. Parameters are the map name, the stats of the players and the score of the game
+    
+    # Function for creating the image for all players in a match data.
     def createTotalGameStatsImage(self, map:str, stats:dict, score:dict, messageId):
         mapLoadScreens = {
             "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
@@ -286,7 +350,7 @@ class valorant(commands.Cog):
                 continue
 
 
-    # function for creating an image to show your personal stats. Parameters are the map name, the agent picture link, user stats and the score in the format of {"Red": 0, "Blue": 0}
+    # Personal stats in a single match. Parameters are the map name, the agent picture link, user stats and the score in the format of {"Red": 0, "Blue": 0}
     def createUserStatsImage(self, map:str, agentPfp:str, userStats:dict, score:dict, messageId, username):
         mapLoadScreens = {
             "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
@@ -352,6 +416,7 @@ class valorant(commands.Cog):
         os.remove("map.png")
         os.remove("agentPfp.png")
     
+    #SECTION: GET LATEST GAMES
     @app_commands.command(name="get_latest_comp_game", description="Get your recent game stats")
     @app_commands.describe(user = "Grab user's latest game. Optional.")
     async def getRecentGame(self, interaction: discord.Interaction, user:discord.Member=None):
@@ -406,14 +471,6 @@ class valorant(commands.Cog):
 
         with open("recentGames.txt", "a+") as file:
             file.write(f" {message},")
-        
-    @app_commands.command(name="valorant_gcvt", description="Get information on the Generic Cursed Valorant Team")
-    async def getGenericValTeam(self, interaction:discord.Interaction):
-        URL = "https://api.henrikdev.xyz"
-        interaction.response.defer()
-
-        fetchParameters = {}
-
 
 
         
@@ -477,6 +534,7 @@ class valorant(commands.Cog):
 
         await interaction.response.send_message("Cleared recent games list and images", ephemeral=True)
 
+    #SECTION: PREMIER TEAMS
     def formatTeamInfo(self, information):
         description = [f"**Name:** {information['name']}#{information['tag']}",
                        f"**Win/loss:** {information['wins']}/{information['losses']}",
