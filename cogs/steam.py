@@ -57,15 +57,16 @@ class steam(commands.Cog):
         return embed
     
     @app_commands.command(name="get_steam_profile", description="Get steam user info")
-    @app_commands.describe(profile = "Copy and paste someone's profile id, or the link of their profile to get their profile!", discordUser = "Get the steam profile of a discord user")
-    async def getProfile(self, interaction:discord.Interaction, profile:str=None, discordUser:discord.User=None):
+    @app_commands.describe(profile = "Copy and paste someone's profile id, or the link of their profile to get their profile!", user = "Get the steam profile of a discord user")
+    async def getProfile(self, interaction:discord.Interaction, profile:str=None, user:discord.Member=None):
         await interaction.response.defer()
 
         if profile is None:
-            with open("steamdetails.json", "r"):
-                steamdetails = json.load("steamdetails.json")
+            with open("steamdetails.json", "r+") as file:
+                file = file.read()
+                steamdetails = json.load(file)
                 try:
-                    profile = steamdetails["profile"]
+                    profile = steamdetails[str(user.id)]
                 except KeyError:
                     return await interaction.followup.send("No profile found, either run /login_for_steam, or provide a profile as a parameter!", ephemeral=True)
         else:
@@ -108,6 +109,23 @@ class steam(commands.Cog):
             return await interaction.followup.send("No profile found, please try again.")
         embed = await self.formatSteamProfileSummaries(profile)
         await interaction.followup.send(embed=embed)
+
+    @app_commands.command(name="login_for_steam", description="Login to your steam account")
+    @app_commands.describe(steamprofile = "Assign a steamid to your user.")
+    async def loginForSteam(self, interaction:discord.Interaction, steamprofile:str):
+        try:
+            with open("steamdetails.json", "w+") as file:
+                file = file.read()
+                steamdetails:dict = json.loads(file)
+                steamdetails.update({str(interaction.user.id): steamprofile})
+
+                json.dump(steamdetails, file)
+
+                return await interaction.response.send_message("Successfully assigned the steam profile to your user!", ephemeral=True)
+        except Exception as e:
+            logger.info(f"Failed to assign steam profile to user with the error: {e}")
+            return await interaction.response.send_message("Failed to assign steam profile to your user!", ephemeral=True)
+        
 
                 
 async def setup(bot):

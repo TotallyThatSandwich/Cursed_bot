@@ -58,6 +58,190 @@ class valorant(commands.Cog):
                             if i != "":
                                 file.write(f" {i},")
 
+    #SECTION: Get user stats from match history etc
+    async def createStatsImage(self, averageStats:dict, gameStats:dict, otherStats:dict):
+        imagesRequired = math.ceil(len(gameStats)/5)
+        print("images required:", imagesRequired)
+        for image in range(imagesRequired):
+            img = Image.new('RGB', (1200, 1400), color = (6, 9, 23))
+            draw = ImageDraw.Draw(img)
+
+            fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=45)
+            userfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=30)
+            boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=50)
+
+            print("most played agent again:", otherStats["mostPlayedAgent"])
+
+            #Draw average stats and most played agent
+            urllib.request.urlretrieve(otherStats["mostPlayedAgent"]["agentPfp"], "mostPlayedAgent.png")
+            mostPlayedAgent = Image.open("mostPlayedAgent.png")
+            
+            mostPlayedAgent = mostPlayedAgent.resize([200,200])
+            img.paste(mostPlayedAgent, (0,0))
+            os.remove("mostPlayedAgent.png")
+            for i in range(len(averageStats)):
+                draw.text([(210+i*200),0], f"{list(averageStats.keys())[i]}", font=boldfnt, fill=(255,255,255))
+                draw.text([(210+i*200), 100], f"{list(averageStats.values())[i]}", font=fnt, fill=(255,255,255))
+            #Draw the line dividing average stats and match history
+            draw.line([(0,200),(img.width, 200)], fill=(256,256,256), width=15)
+
+            #Draw the match history
+            draw.text((210, 200), "Match", font=boldfnt, fill=(255,255,255))
+            draw.text((410, 200), "ACS", font=boldfnt, fill=(255,255,255))
+            draw.text((610, 200), "ADR", font=boldfnt, fill=(255,255,255))
+            draw.text((810, 200), "HS%", font=boldfnt, fill=(255,255,255))
+            draw.text((1010,200), "DD", font=boldfnt, fill=(255,255,255))
+
+            for i in range(0+(image*5),5+(image*5)):
+                try:
+                    game = gameStats[i]
+                except IndexError:
+                    break
+                print(f"{i}: {str(game)}")
+                urllib.request.urlretrieve(game["agentPfp"], f"agentPfp{i}.png")
+                j=i
+                if i > 4:
+                    j = i - (image*5)
+                
+                agentPfp = Image.open(f"agentPfp{i}.png")
+                agentPfp = agentPfp.resize([200,200])
+                img.paste(agentPfp, (0, 320+(j*200)))
+                os.remove(f"agentPfp{i}.png")
+
+                print("j:", j)
+                draw.text((210, 320+(j*200)), f"{game['matchDetails']['map']}\n{game['matchDetails']['playerSidedScore']}", font=fnt, fill=(255,255,255))
+                draw.text((210, 430+(j*200)), f"{game['KDA']}", font=userfnt, fill=(255,255,255))
+                draw.text((410, 320+(j*200)), f"{game['ACS']}", font=fnt, fill=(255,255,255))
+                draw.text((610, 320+(j*200)), f"{game['ADR']}", font=fnt, fill=(255,255,255))
+                draw.text((810, 320+(j*200)), f"{game['HS']}", font=fnt, fill=(255,255,255))
+                draw.text((1010,320+(j*200)), f"{game['DD']}", font=fnt, fill=(255,255,255))
+            print("saving userCollectedStats")
+            img.save(f"userCollectedStats{image}.png")
+    
+    async def calculateUserStatsFromGames(self, response, user):
+        userStats = {}
+        gameStats = []
+        averagedStats = {"ADR": 0, "ACS": 0, "KDR": 0, "HS": 0}
+        mostPlayedAgent = {}
+        otherStats = {
+            "mostPlayedAgent": None,
+            "winrate": 0
+        }
+
+        # function for sorting mostPlayedAgent
+        def sortLowestToHighest(arr, stat):
+            length = len(arr)
+
+            for i in arr:
+                for j in arr:
+                    if mostPlayedAgent[i]["timesPlayed"] > mostPlayedAgent[i]["timesPlayed"]:
+                        print(f"Swapping {arr[i]} with {arr[j]}")
+                        arr[i], arr[j] = arr[j], arr[i]
+            
+            return arr
+
+        for i in response["data"]:
+            matchDetails = i["metadata"]
+            playerDetails = i["players"]["all_players"]
+            for k in playerDetails:
+                if k["puuid"] == user["data"]["puuid"]:
+                    requestedUser = k
+            
+            teamDetails = i["teams"]
+            print(str(matchDetails) + "\n\n", str(requestedUser) + "\n\n", str(teamDetails) + "\n\n---")
+
+            try:
+                totalRoundsPlayed = teamDetails["red"]["rounds_won"] + teamDetails["blue"]["rounds_won"]
+            except TypeError:
+                continue
+
+            if matchDetails["mode_id"] not in ["competitive", "unrated", "premier"]:
+                continue
+            
+            gameStats.append({
+                "matchDetails": {"map": matchDetails["map"], "playerSidedScore": f"{teamDetails[str(requestedUser['team']).lower()]['rounds_won']} - {teamDetails[str(requestedUser['team']).lower()]['rounds_lost']}", "mode": matchDetails["mode_id"]},
+                "kills": requestedUser["stats"]["kills"], #int
+                "deaths": requestedUser["stats"]["deaths"], #int
+                "assists": requestedUser["stats"]["assists"], #int
+                "KDA": f'{requestedUser["stats"]["kills"]}/{requestedUser["stats"]["deaths"]}/{requestedUser["stats"]["assists"]}', #string
+                "KDR": requestedUser["stats"]["kills"]/requestedUser["stats"]["deaths"], #float
+                "ACS": round((requestedUser["stats"]["score"]/totalRoundsPlayed), 2), #float
+                "ADR": round((requestedUser["damage_made"]/totalRoundsPlayed),2), #float
+                "DD": math.floor((requestedUser["damage_made"]/totalRoundsPlayed)-(requestedUser["damage_received"]/totalRoundsPlayed)), #float -> int
+                "rank": requestedUser["currenttier_patched"], #string
+                "team": requestedUser["team"], #string
+                "HS": f'{round((requestedUser["stats"]["headshots"]/(requestedUser["stats"]["bodyshots"]+requestedUser["stats"]["headshots"]+requestedUser["stats"]["legshots"])*100),2)}%', #string because of % sign
+                "agentPfp": requestedUser["assets"]["agent"]["small"] #string
+            })
+            try:
+                mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": mostPlayedAgent[requestedUser["character"]]["timesPlayed"] + 1, "agentPfp": requestedUser["assets"]["agent"]["small"]}})
+            except KeyError:
+                mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": 1, "agentPfp": requestedUser["assets"]["agent"]["small"]}})
+        
+        sortLowestToHighest(mostPlayedAgent, "timesPlayed")
+        
+        for i in range(len(gameStats)):
+            specificGameStats = gameStats[i]
+            averagedStats["ADR"] += specificGameStats["ADR"]
+            averagedStats["ACS"] += specificGameStats["ACS"]
+            averagedStats["KDR"] += specificGameStats["KDR"]
+            averagedStats["HS"] += float(specificGameStats["HS"].replace("%", ""))
+
+        averagedStats["ADR"] = round(averagedStats["ADR"]/len(gameStats),2)
+        averagedStats["ACS"] = round(averagedStats["ACS"]/len(gameStats), 2)
+        averagedStats["KDR"] = round(averagedStats["KDR"]/len(gameStats),2)
+        averagedStats["HS"] = str(round(averagedStats["HS"]/len(gameStats),2)) + "%"
+        
+        otherStats["mostPlayedAgent"] = mostPlayedAgent[list(mostPlayedAgent.keys())[0]]
+        print(json.dumps(averagedStats, indent=4))
+        print("\n\nmost played agent:", mostPlayedAgent)
+        await self.createStatsImage(averagedStats, gameStats, otherStats)
+
+
+
+    @app_commands.command(name="get_valorant_stats", description="Get your valorant stats")
+    @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 20.")
+    async def getGames(self, interaction:discord.Interaction, user:discord.Member=None, amount:int=7):
+        await interaction.response.defer()
+        if amount > 20 or amount < 1:
+            return await interaction.followup.send("Amount of games cannot exceed 20 or be under 1", ephemeral=True)
+        URL = "https://api.henrikdev.xyz"
+        userAccount = {}
+
+        if os.path.exists("riotdetails.json"):
+            with open("riotdetails.json", "r") as file:
+                    riotDetails = json.load(file)
+                    try:
+                        if user == None:
+                            userAccount = riotDetails[str(interaction.user.id)]
+                        else:
+                            userAccount = riotDetails[str(user.id)]
+                    except KeyError:
+                        return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
+        else:
+            return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
+        
+        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/ap/{userAccount['data']['puuid']}?size={amount}")
+        response = response.json()
+
+        if(response["status"] != 200):
+            return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
+        
+        await self.calculateUserStatsFromGames(response, userAccount)
+        imagesRequired = math.ceil(amount/5)
+        
+        for i in range(imagesRequired):
+            try:
+                await interaction.followup.send(file=discord.File(f"userCollectedStats{i}.png", f"userCollectedStats{i}.png"))
+                os.remove(f"userCollectedStats{i}.png")
+            except FileNotFoundError:
+                break
+            
+            
+
+
+    #SECTION: Create stat images from match data
+    # Function for formatting images from match data. Use this to create the images for the match data, not the other functions.
     def formatMatchEmbed(self, messageid, response=None, puuid=None):       
         finalGameStats = {}
         
@@ -99,8 +283,8 @@ class valorant(commands.Cog):
 
         self.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid, requestedUser["name"])
         self.createTotalGameStatsImage(matchDetails["map"], finalGameStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid)
-
-    # function for creating an image to show the stats of the game. Parameters are the map name, the stats of the players and the score of the game
+    
+    # Function for creating the image for all players in a match data.
     def createTotalGameStatsImage(self, map:str, stats:dict, score:dict, messageId):
         mapLoadScreens = {
             "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
@@ -286,7 +470,7 @@ class valorant(commands.Cog):
                 continue
 
 
-    # function for creating an image to show your personal stats. Parameters are the map name, the agent picture link, user stats and the score in the format of {"Red": 0, "Blue": 0}
+    # Personal stats in a single match. Parameters are the map name, the agent picture link, user stats and the score in the format of {"Red": 0, "Blue": 0}
     def createUserStatsImage(self, map:str, agentPfp:str, userStats:dict, score:dict, messageId, username):
         mapLoadScreens = {
             "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
@@ -352,6 +536,7 @@ class valorant(commands.Cog):
         os.remove("map.png")
         os.remove("agentPfp.png")
     
+    #SECTION: GET LATEST GAMES
     @app_commands.command(name="get_latest_comp_game", description="Get your recent game stats")
     @app_commands.describe(user = "Grab user's latest game. Optional.")
     async def getRecentGame(self, interaction: discord.Interaction, user:discord.Member=None):
@@ -406,14 +591,6 @@ class valorant(commands.Cog):
 
         with open("recentGames.txt", "a+") as file:
             file.write(f" {message},")
-        
-    @app_commands.command(name="valorant_gcvt", description="Get information on the Generic Cursed Valorant Team")
-    async def getGenericValTeam(self, interaction:discord.Interaction):
-        URL = "https://api.henrikdev.xyz"
-        interaction.response.defer()
-
-        fetchParameters = {}
-
 
 
         
@@ -477,6 +654,7 @@ class valorant(commands.Cog):
 
         await interaction.response.send_message("Cleared recent games list and images", ephemeral=True)
 
+    #SECTION: PREMIER TEAMS
     def formatTeamInfo(self, information):
         description = [f"**Name:** {information['name']}#{information['tag']}",
                        f"**Win/loss:** {information['wins']}/{information['losses']}",
