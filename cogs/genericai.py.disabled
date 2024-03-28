@@ -10,7 +10,10 @@ from chatterbot.trainers import ListTrainer
 import settings as settings
 logger = settings.logging.getLogger("bot")
 
+
 genericChatBot = ChatBot("GenericBot")
+
+    
 trainer = ListTrainer(genericChatBot)
 
 usableChannels = ["1028185142491107328"]
@@ -94,7 +97,7 @@ class genericAI(commands.Cog):
         if "reply" in str(message.type):
             repliedMessage = await message.channel.fetch_message(message.reference.message_id)
 
-            if (str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530") and (message.author.id != "1210389365185056818" or message.author.id != "1210512184103403530"):
+            if (str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530") and not(message.author.id == "1210389365185056818" or message.author.id == "1210512184103403530"):
                 response = await formatResponse(botQuery)
                 return await message.channel.send(response)
             elif not("1210389365185056818" in str(repliedMessage.content) or "1210512184103403530" in str(repliedMessage.content) or repliedMessage.author.id == message.author.id):
