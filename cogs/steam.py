@@ -5,6 +5,8 @@ from discord import ui
 import json
 import requests
 
+import tzlocal
+
 import os
 import settings as settings
 logger = settings.logging.getLogger("bot")
@@ -33,9 +35,9 @@ class steam(commands.Cog):
         if profile["communityvisibilitystate"] == 1:
             description = f"**{personaStatuses[profile['personastate']][0]}\nLast seen: {datetime.utcfromtimestamp(profile['lastlogoff']).strftime('%d-%m-%Y %H:%M:%S')}"
         elif "realname" in profile:
-            description = f"**{profile['realname']}**\n{personaStatuses[profile['personastate']][0]}\n\nLast seen: {datetime.utcfromtimestamp(profile['lastlogoff']).strftime('%d-%m-%Y %H:%M:%S')}"
+            description = f"**{profile['realname']}**\n{personaStatuses[profile['personastate']][0]}\nLast seen: {datetime.utcfromtimestamp(profile['lastlogoff']).strftime('%d-%m-%Y %H:%M:%S')}"
         else:
-            description = f"{personaStatuses[profile['personastate']][0]}\nLast seen: {datetime.utcfromtimestamp(profile['lastlogoff']).strftime('%d-%m-%Y %H:%M:%S')}"
+            description = f"{personaStatuses[profile['personastate']][0]}\nLast seen: {datetime.fromtimestamp(profile['lastlogoff'], tzlocal.get_localzone()).strftime('%d-%m-%Y %H:%M:%S')}"
 
         embed = discord.Embed(
             title = profile["personaname"],
@@ -55,8 +57,8 @@ class steam(commands.Cog):
         return embed
     
     @app_commands.command(name="get_steam_profile", description="Get steam user info")
-    @app_commands.describe(profile = "Copy and paste someone's profile id, or the link of their profile to get their profile!")
-    async def getProfile(self, interaction:discord.Interaction, profile:str=None):
+    @app_commands.describe(profile = "Copy and paste someone's profile id, or the link of their profile to get their profile!", discordUser = "Get the steam profile of a discord user")
+    async def getProfile(self, interaction:discord.Interaction, profile:str=None, discordUser:discord.User=None):
         await interaction.response.defer()
 
         if profile is None:
