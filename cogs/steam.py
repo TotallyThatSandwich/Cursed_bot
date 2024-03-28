@@ -101,7 +101,11 @@ class steam(commands.Cog):
     #         ]
     #     }
     # }
-        profile = response["response"]["players"][0]
+        try:
+            profile = response["response"]["players"][0]
+        except IndexError:
+            logger.info(f"Failed to find profile from {profile} with the response of {json.dumps(response, indent=4)}")
+            return await interaction.followup.send("No profile found, please try again.")
         embed = await self.formatSteamProfileSummaries(profile)
         await interaction.followup.send(embed=embed)
 
