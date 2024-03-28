@@ -47,7 +47,7 @@ class helldivers(commands.Cog):
 
         return planetsInfo
 
-    @app_commands.command(name="democtatic_status", description="get helldivers 2 campaign Status")
+    @app_commands.command(name="democratic_status", description="get Helldivers 2 campaign Status")
     async def democtaticStatus(self, interaction: discord.Interaction):
 
 
