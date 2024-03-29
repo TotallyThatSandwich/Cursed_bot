@@ -164,4 +164,5 @@ cython_debug/
 *.db
 
 /riotdetails.json
+/matchdetails.json
 /recentGames.txt
