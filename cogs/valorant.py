@@ -21,16 +21,22 @@ class matchStatsUI(discord.ui.View):
     
     @discord.ui.button(label="Scoreboard", style=discord.ButtonStyle.blurple, custom_id="scoreboardswap")
     async def scoreboard(self, interaction:discord.Interaction, button:discord.ui.Button):
-        self.children[0].disabled = False
-        self.children[1].disabled = True
-        await interaction.response.edit_message(attachments=[discord.File(f"gameStats{interaction.message.id}.png")], delete_after=600)
+        for i in self.children:
+            if i.disabled == False:
+                i.disabled = True
+            else:
+                i.disabled = False
+        await interaction.response.edit_message(attachments=[discord.File(f"gameStats{interaction.message.id}.png")], delete_after=600, view=self)
         
 
     @discord.ui.button(label="Personal", style=discord.ButtonStyle.blurple, custom_id="personalswap")
     async def personal(self, interaction:discord.Interaction, button:discord.ui.Button):
-        self.children[0].disabled = False
-        self.children[1].disabled = True
-        await interaction.response.edit_message(attachments=[discord.File(f"userStats{interaction.message.id}.png")], delete_after=600)
+        for i in self.children:
+            if i.disabled == False:
+                i.disabled = True
+            else:
+                i.disabled = False
+        await interaction.response.edit_message(attachments=[discord.File(f"userStats{interaction.message.id}.png")], delete_after=600, view=self)
         
 
 class selectMatchUI(discord.ui.View):
@@ -45,7 +51,7 @@ class selectMatchUI(discord.ui.View):
         try:
             valorant.formatMatchEmbed(interaction.message.id, [matchStats[0], matchStats[1], matchStats[2]],userAccount["data"]["puuid"])
             with open("recentGames.txt", "a+") as file:
-                file.write(f"{interaction.id},")
+                file.write(f"{interaction.message.id},")
             
             await interaction.followup.edit_message(interaction.message.id, attachments=[discord.File(f"userStats{interaction.message.id}.png")], view=matchStatsUI())
         except TypeError as e:
@@ -158,16 +164,17 @@ class valorant(commands.Cog):
         }
 
         # function for sorting mostPlayedAgent
-        def sortLowestToHighest(arr):
+        def sortLowestToHighest(arr:dict):
             length = len(arr)
-
-            for i in arr:
-                for j in arr:
+            agentArr = list(arr.keys())
+            print(arr)
+            for i in list(arr.keys()):
+                for j in list(arr.keys()):
+                    print("i:", mostPlayedAgent[i], "j:", mostPlayedAgent[j])
                     if mostPlayedAgent[i]["timesPlayed"] > mostPlayedAgent[i]["timesPlayed"]:
-                        #print(f"Swapping {arr[i]} with {arr[j]}")
-                        arr[i], arr[j] = arr[j], arr[i]
-            
-            return arr
+                        agentArr[i], agentArr[j] = agentArr[j], agentArr[i]
+            print(arr[agentArr[0]])
+            return arr[agentArr[0]] # returns most played agent's [{timesPlayed: count}, {agentPfp: url}]
 
         for l in range(len(response["data"])):
             i = response["data"][l]
@@ -211,7 +218,7 @@ class valorant(commands.Cog):
             matchStats.append([matchDetails, playerDetails, teamDetails])
         
         # Sorts the most played agent by the amount of times played. This function returns an array of the most played agents in order of most played to least played.
-        mostPlayedAgent = sortLowestToHighest(mostPlayedAgent)
+        mostPlayedAgent = sortLowestToHighest(mostPlayedAgent) # returns the most played agent's [{timesPlayed: count}, {agentPfp: url}]
         
         # Calculate the average stats for all comp, unrated and premier games requested
         for i in range(len(gameStats)):
@@ -226,7 +233,7 @@ class valorant(commands.Cog):
         averagedStats["KDR"] = round(averagedStats["KDR"]/len(gameStats),2)
         averagedStats["HS"] = str(round(averagedStats["HS"]/len(gameStats),2)) + "%"
         
-        otherStats["mostPlayedAgent"] = mostPlayedAgent[list(mostPlayedAgent.keys())[0]]
+        otherStats["mostPlayedAgent"] = mostPlayedAgent
         #print(json.dumps(averagedStats, indent=4))
         #print("\n\nmost played agent:", mostPlayedAgent)
         await self.createStatsImage(averagedStats, gameStats, otherStats)
@@ -247,13 +254,13 @@ class valorant(commands.Cog):
 
         if os.path.exists("riotdetails.json"):
             with open("riotdetails.json", "r") as file:
-                    riotDetails = json.load(file)
                     try:
+                        riotDetails = json.load(file)
                         if user == None:
                             userAccount = riotDetails[str(interaction.user.id)]
                         else:
                             userAccount = riotDetails[str(user.id)]
-                    except KeyError:
+                    except:
                         return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
         else:
             return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
@@ -604,26 +611,18 @@ class valorant(commands.Cog):
         URL = "https://api.henrikdev.xyz"
         userAccount = {}
 
-        try:
-            with open ("riotdetails.json", "r") as file:
-                try:
-                    riotDetails = json.load(file)
-
-                    if str(interaction.user.id) not in riotDetails and user == None:
-                        return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
-                    
-                    if user != None and str(user.id) not in riotDetails:
+        if os.path.exists("riotdetails.json"):
+            with open("riotdetails.json", "r") as file:
+                    try:
+                        riotDetails = json.load(file)
+                        if user == None:
+                            userAccount = riotDetails[str(interaction.user.id)]
+                        else:
+                            userAccount = riotDetails[str(user.id)]
+                    except:
                         return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
-                    
-                    if user == None:
-                        userAccount = riotDetails[str(interaction.user.id)]
-                    else:
-                        userAccount = riotDetails[str(user.id)]
-                except:
-                    return await interaction.response.send_message("Run /login_for_valorant before running this command!", ephemeral=True)
-        except:
-            return await interaction.response.send_message("Run /login_for_valorant before running this command!", ephemeral=True)
-            
+        else:
+            return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
 
         fetchParameters = {
             "affinity": "ap",
@@ -638,7 +637,7 @@ class valorant(commands.Cog):
         if(response["status"] != 200):
             return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
 
-        self.formatMatchEmbed(messageid=message.id,response=response,puuid=userAccount["data"]["puuid"],)
+        valorant.formatMatchEmbed(message.id,response,userAccount["data"]["puuid"])
         
         userStatsFile = discord.File(f"userStats{message.id}.png", filename=f"userStats{message.id}.png")
         gameStatsFile = discord.File(f"gameStats{message.id}.png", filename=f"gameStats{message.id}.png")
