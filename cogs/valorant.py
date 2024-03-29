@@ -156,7 +156,11 @@ class valorant(commands.Cog):
         userStats = {}
         gameStats = []
         averagedStats = {"ADR": 0, "ACS": 0, "KDR": 0, "HS": 0}
+
+
         mostPlayedAgent = {}
+        mostPlayedAgentArr = [] # used for containing mostPlayedAgentFormatting {agent name: {timesPlayed: count, agentPfp: url}}
+
         matchStats = []
         otherStats = {
             "mostPlayedAgent": None,
@@ -164,17 +168,19 @@ class valorant(commands.Cog):
         }
 
         # function for sorting mostPlayedAgent
-        def sortLowestToHighest(arr:dict):
+        def sortLowestToHighest(arr:list):
             length = len(arr)
-            agentArr = list(arr.keys())
             print(arr)
-            for i in list(arr.keys()):
-                for j in list(arr.keys()):
-                    print("i:", mostPlayedAgent[i], "j:", mostPlayedAgent[j])
-                    if mostPlayedAgent[i]["timesPlayed"] > mostPlayedAgent[i]["timesPlayed"]:
-                        agentArr[i], agentArr[j] = agentArr[j], agentArr[i]
-            print(arr[agentArr[0]])
-            return arr[agentArr[0]] # returns most played agent's [{timesPlayed: count}, {agentPfp: url}]
+            for i in arr:
+                for j in arr:
+                    iagentName = list(i.keys())[0]
+                    jagentName = list(j.keys())[0]
+
+                    print(f"{iagentName}:{i[iagentName]['timesPlayed']}, {jagentName}:{j[jagentName]['timesPlayed']}")
+                    if i[iagentName]['timesPlayed'] > j[jagentName]['timesPlayed']:
+                        arr[arr.index(i)], arr[arr.index(j)] = arr[arr.index(j)], arr[arr.index(i)]
+            
+            return arr[0][list(arr[0].keys())[0]] # returns most played agent's {agentName:{timesPlayed: count, agentPfp: url}}
 
         for l in range(len(response["data"])):
             i = response["data"][l]
@@ -216,9 +222,11 @@ class valorant(commands.Cog):
                 mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": 1, "agentPfp": requestedUser["assets"]["agent"]["small"]}})
 
             matchStats.append([matchDetails, playerDetails, teamDetails])
-        
+        for i in mostPlayedAgent:
+            mostPlayedAgentArr.append({i: mostPlayedAgent[i]}) # appends {agent name: {timesPlayed: count, agentPfp: url}}
+
         # Sorts the most played agent by the amount of times played. This function returns an array of the most played agents in order of most played to least played.
-        mostPlayedAgent = sortLowestToHighest(mostPlayedAgent) # returns the most played agent's [{timesPlayed: count}, {agentPfp: url}]
+        mostPlayedAgent = sortLowestToHighest(mostPlayedAgentArr) # returns the most played agent's [{timesPlayed: count}, {agentPfp: url}]
         
         # Calculate the average stats for all comp, unrated and premier games requested
         for i in range(len(gameStats)):
