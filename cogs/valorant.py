@@ -6,6 +6,8 @@ from discord import ui
 import json
 import requests
 
+from asyncio import sleep
+
 import os
 import math
 from PIL import Image, ImageDraw, ImageFont, ImageChops
@@ -91,8 +93,44 @@ class valorant(commands.Cog):
                             if i != "":
                                 file.write(f" {i},")
         
-    
-    #SECTION: Get user stats from match history etc
+    #SECTION: Get a large widescreen of user stats
+    @app_commands.command(name="get_valorant_account_stats", description="Your total game stats from your past 20 competitive games")
+    async def getTotalAccountStats(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None):
+        await interaction.response.defer()
+        message = await interaction.original_response()
+
+        if riotuser == None:
+            if os.path.exists("riotdetails.json"):
+                with open("riotdetails.json", "r") as file:
+                        try:
+                            riotDetails = json.load(file)
+                            if user == None:
+                                targetAccount = riotDetails[str(interaction.user.id)]
+                            else:
+                                targetAccount = riotDetails[str(user.id)]
+                        except:
+                            return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
+            else:
+                return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
+            
+        else:
+            if riottag == None:
+                return await interaction.followup.send("Please provide a riot tag", ephemeral=True)
+            
+            targetAccount = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{riotuser}/{riottag}")
+            targetAccount = targetAccount.json()
+            
+
+
+        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/ap/{targetAccount['data']['puuid']}?mode=competitive?size=20")
+        repsonse = response.json()
+        if response["status"] != 200:
+            return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
+
+        allGamesData = await self.calculateUserStatsFromGames(response, targetAccount)
+
+
+    #SECTION: Get user stats from match history. Provide avereage stats, match history stats and other stats (most played agent, etc.)
     async def createStatsImage(self, averageStats:dict, gameStats:dict, otherStats:dict):
         imagesRequired = math.ceil(len(gameStats)/5)
         #print("images required:", imagesRequired)
@@ -245,7 +283,7 @@ class valorant(commands.Cog):
         #print(json.dumps(averagedStats, indent=4))
         #print("\n\nmost played agent:", mostPlayedAgent)
         await self.createStatsImage(averagedStats, gameStats, otherStats)
-        return matchStats
+        return {"matchStats": matchStats, "averagedStats": averagedStats, "gameStats": gameStats, "otherStats": otherStats}
 
 
 
@@ -288,6 +326,8 @@ class valorant(commands.Cog):
             try:
                 matchHistoryUI.timeout = 600
                 matchHistorySelect:discord.ui.Select = matchHistoryUI.children[0]
+                matchHistorySelect.options.clear()
+                
                 for k in range(len(allGamesData)):
                     IndividualMatchData = allGamesData[k]
                     matchHistorySelect.add_option(label=f"Match {k+1}", value=f"{k+1}")
