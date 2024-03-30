@@ -94,8 +94,63 @@ class valorant(commands.Cog):
                                 file.write(f" {i},")
         
     #SECTION: Get a large widescreen of user stats
-    @app_commands.command(name="get_valorant_account_stats", description="Your total game stats from your past 20 competitive games")
-    async def getTotalAccountStats(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None):
+                                
+    def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict):
+        fullAgentImageLinks = {
+            "Astra": "https://static.wikia.nocookie.net/valorant/images/e/e0/Astra_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202708",
+            "Breach": "https://static.wikia.nocookie.net/valorant/images/2/24/Breach_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202713",
+            "Brimstone": "https://static.wikia.nocookie.net/valorant/images/8/81/Brimstone_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202719",
+            "Chamber": "https://static.wikia.nocookie.net/valorant/images/5/5d/Chamber_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202725",
+            "Clove": "https://static.wikia.nocookie.net/valorant/images/0/0b/Clove_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20240326163704",
+            "Cypher": "https://static.wikia.nocookie.net/valorant/images/5/55/Cypher_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202731",
+            "Deadlock": "https://static.wikia.nocookie.net/valorant/images/a/aa/Deadlock_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230627132700",
+            "Fade": "https://static.wikia.nocookie.net/valorant/images/e/e8/Fade_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202738",
+            "Gekko": "https://static.wikia.nocookie.net/valorant/images/a/a4/Gekko_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230304203025",
+            "Harbor": "https://static.wikia.nocookie.net/valorant/images/5/5c/Harbor_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20221018133900",
+            "Iso": "https://static.wikia.nocookie.net/valorant/images/5/5f/Iso_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20231031131018",
+            "Jett": "https://static.wikia.nocookie.net/valorant/images/e/e3/Jett_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202742",
+            "KAY/O": "https://static.wikia.nocookie.net/valorant/images/5/57/KAYO_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202747",
+            "Killjoy": "https://static.wikia.nocookie.net/valorant/images/8/81/Killjoy_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202751",
+            "Neon": "https://static.wikia.nocookie.net/valorant/images/f/fe/Neon_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202800",
+            "Omen": "https://static.wikia.nocookie.net/valorant/images/0/0e/Omen_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202807",
+            "Phoenix": "https://static.wikia.nocookie.net/valorant/images/9/90/Phoenix_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202811",
+            "Raze": "https://static.wikia.nocookie.net/valorant/images/6/6f/Raze_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202815",
+            "Reyna": "https://static.wikia.nocookie.net/valorant/images/3/36/Reyna_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202820",
+            "Sage": "https://static.wikia.nocookie.net/valorant/images/7/7e/Sage_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202824",
+            "Skye": "https://static.wikia.nocookie.net/valorant/images/7/7f/Skye_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202828",
+            "Sova": "https://static.wikia.nocookie.net/valorant/images/c/c5/Sova_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202832",
+            "Viper": "https://static.wikia.nocookie.net/valorant/images/8/85/Viper_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202837",
+            "Yoru": "https://static.wikia.nocookie.net/valorant/images/1/1e/Yoru_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202841"
+        }
+
+        img = Image.new('RGB', (1920, 910), color = (6, 9, 23))
+        draw = ImageDraw.Draw(img)
+
+        fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=65)
+        userfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=30)
+        boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100)
+
+        #Draw account info and most played agent
+        agentName = otherStats["mostPlayedAgent"]["agentName"]
+        for i in agentName:
+            if str(i).isalpha() == False:
+                agentName = agentName.replace(i, "")
+        mostPlayedAgent = Image.open(f"images/valorantAgents/{agentName}.png")
+        mostPlayedAgent = ImageChops.offset(mostPlayedAgent, -250, 0)
+        mostPlayedAgent = mostPlayedAgent.crop(((0,0,600,910)))
+    
+        img.paste(mostPlayedAgent, (0,0))
+        
+        draw.text([605, 0 ], f"{accountInfo['data']['name']}", font=boldfnt, fill=(255,255,255))
+        draw.text([605+(len(agentName)*10), 0], f"{accountInfo['data']['tag']}", font=fnt, fill=(255,255,255))
+        
+        img.save("valorantAccountStats.png")
+
+
+
+    
+    @app_commands.command(name="get_valorant_account", description="Your total game stats from your past 10 competitive games")
+    async def getUserAccount(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None):
         await interaction.response.defer()
         message = await interaction.original_response()
 
@@ -112,7 +167,6 @@ class valorant(commands.Cog):
                             return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
             else:
                 return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
-            
         else:
             if riottag == None:
                 return await interaction.followup.send("Please provide a riot tag", ephemeral=True)
@@ -121,13 +175,24 @@ class valorant(commands.Cog):
             targetAccount = targetAccount.json()
             
 
-
-        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/ap/{targetAccount['data']['puuid']}?mode=competitive?size=20")
-        repsonse = response.json()
+        print("target account:", str(targetAccount))
+        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/ap/{targetAccount['data']['puuid']}?mode=competitive&size=10")
+        response = response.json()
         if response["status"] != 200:
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
 
-        allGamesData = await self.calculateUserStatsFromGames(response, targetAccount)
+        userStatsFromMatchHistory = await self.calculateUserStatsFromGames(response, targetAccount)
+        matchStats = userStatsFromMatchHistory["matchStats"]
+        averagedStats = userStatsFromMatchHistory["averagedStats"]
+        otherStats = userStatsFromMatchHistory["otherStats"]
+        gameStats = userStatsFromMatchHistory["gameStats"]
+
+        self.createValorantAccountImage(targetAccount, matchStats, averagedStats, gameStats, otherStats)
+
+        await interaction.followup.send(file=discord.File("valorantAccountStats.png"))
+        os.remove("valorantAccountStats.png")
+
+
 
 
     #SECTION: Get user stats from match history. Provide avereage stats, match history stats and other stats (most played agent, etc.)
@@ -191,10 +256,8 @@ class valorant(commands.Cog):
             img.save(f"userCollectedStats{image}.png")
     
     async def calculateUserStatsFromGames(self, response, user):
-        userStats = {}
-        gameStats = []
+        gameStats = [] # specific player stats of a game. contains all the game stats in the format of {"matchDetails": {"map": map, "playerSidedScore": "Red - Blue", "mode": mode}, "kills": kills, "deaths": deaths, "assists": assists, "KDA": "kills/deaths/assists", "KDR": kills/deaths, "ACS": ACS, "ADR": ADR, "DD": DD, "rank": rank, "team": team, "HS": HS, "agentPfp": agentPfp}
         averagedStats = {"ADR": 0, "ACS": 0, "KDR": 0, "HS": 0}
-
 
         mostPlayedAgent = {}
         mostPlayedAgentArr = [] # used for containing mostPlayedAgentFormatting {agent name: {timesPlayed: count, agentPfp: url}}
@@ -202,7 +265,7 @@ class valorant(commands.Cog):
         matchStats = []
         otherStats = {
             "mostPlayedAgent": None,
-            "winrate": 0
+            "winrate": {"wins": 0, "losses": 0, "draws": 0}
         }
 
         # function for sorting mostPlayedAgent
@@ -255,10 +318,17 @@ class valorant(commands.Cog):
                 "agentPfp": requestedUser["assets"]["agent"]["small"] #string
             })
             try:
-                mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": mostPlayedAgent[requestedUser["character"]]["timesPlayed"] + 1, "agentPfp": requestedUser["assets"]["agent"]["small"]}})
+                mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": mostPlayedAgent[requestedUser["character"]]["timesPlayed"] + 1, "agentPfp": requestedUser["assets"]["agent"]["small"], "agentName": requestedUser["character"]}})
             except KeyError:
-                mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": 1, "agentPfp": requestedUser["assets"]["agent"]["small"]}})
-
+                mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": 1, "agentPfp": requestedUser["assets"]["agent"]["small"], "agentName": requestedUser["character"]}})
+            
+            if teamDetails[str(requestedUser["team"]).lower()]["rounds_won"] > teamDetails[str(requestedUser["team"]).lower()]["rounds_lost"]:
+                otherStats.update({"winrate": {"wins": otherStats["winrate"]["wins"] + 1, "losses": otherStats["winrate"]["losses"], "draws": otherStats["winrate"]["draws"]}})
+            elif teamDetails[str(requestedUser["team"]).lower()]["rounds_won"] < teamDetails[str(requestedUser["team"]).lower()]["rounds_lost"]:
+                otherStats.update({"winrate": {"wins": otherStats["winrate"]["wins"], "losses": otherStats["winrate"]["losses"] + 1, "draws": otherStats["winrate"]["draws"]}})
+            else:
+                otherStats.update({"winrate": {"wins": otherStats["winrate"]["wins"], "losses": otherStats["winrate"]["losses"], "draws": otherStats["winrate"]["draws"] + 1}})
+            
             matchStats.append([matchDetails, playerDetails, teamDetails])
         for i in mostPlayedAgent:
             mostPlayedAgentArr.append({i: mostPlayedAgent[i]}) # appends {agent name: {timesPlayed: count, agentPfp: url}}
@@ -280,20 +350,18 @@ class valorant(commands.Cog):
         averagedStats["HS"] = str(round(averagedStats["HS"]/len(gameStats),2)) + "%"
         
         otherStats["mostPlayedAgent"] = mostPlayedAgent
-        #print(json.dumps(averagedStats, indent=4))
-        #print("\n\nmost played agent:", mostPlayedAgent)
-        await self.createStatsImage(averagedStats, gameStats, otherStats)
+
         return {"matchStats": matchStats, "averagedStats": averagedStats, "gameStats": gameStats, "otherStats": otherStats}
 
 
 
     @app_commands.command(name="get_valorant_stats", description="Get your valorant stats")
-    @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 20.")
+    @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 10.")
     async def getGames(self, interaction:discord.Interaction, user:discord.Member=None, amount:int=5):
         await interaction.response.defer()
         message = await interaction.original_response()
 
-        if amount > 20 or amount < 1:
+        if amount > 10 or amount < 1:
             return await interaction.followup.send("Amount of games cannot exceed 20 or be under 1", ephemeral=True)
         URL = "https://api.henrikdev.xyz"
         userAccount = {}
@@ -317,7 +385,14 @@ class valorant(commands.Cog):
         if(response["status"] != 200):
             return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
         
-        allGamesData = await self.calculateUserStatsFromGames(response, userAccount)
+        userStatsOverMatchHistory = await self.calculateUserStatsFromGames(response, userAccount) # returns {"matchStats": matchStats, averagedStats, gameStats, otherStats
+        allGamesData = userStatsOverMatchHistory["matchStats"]
+        averagedStats = userStatsOverMatchHistory["averagedStats"]
+        otherStats = userStatsOverMatchHistory["otherStats"]
+        gameStats = userStatsOverMatchHistory["gameStats"]
+
+        await self.createStatsImage(averagedStats, gameStats, otherStats)
+
         imagesRequired = math.ceil(amount/5)
 
         matchHistoryUI = selectMatchUI()
