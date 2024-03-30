@@ -96,37 +96,38 @@ class valorant(commands.Cog):
     #SECTION: Get a large widescreen of user stats
                                 
     def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict):
-        fullAgentImageLinks = {
-            "Astra": "https://static.wikia.nocookie.net/valorant/images/e/e0/Astra_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202708",
-            "Breach": "https://static.wikia.nocookie.net/valorant/images/2/24/Breach_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202713",
-            "Brimstone": "https://static.wikia.nocookie.net/valorant/images/8/81/Brimstone_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202719",
-            "Chamber": "https://static.wikia.nocookie.net/valorant/images/5/5d/Chamber_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202725",
-            "Clove": "https://static.wikia.nocookie.net/valorant/images/0/0b/Clove_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20240326163704",
-            "Cypher": "https://static.wikia.nocookie.net/valorant/images/5/55/Cypher_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202731",
-            "Deadlock": "https://static.wikia.nocookie.net/valorant/images/a/aa/Deadlock_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230627132700",
-            "Fade": "https://static.wikia.nocookie.net/valorant/images/e/e8/Fade_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202738",
-            "Gekko": "https://static.wikia.nocookie.net/valorant/images/a/a4/Gekko_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230304203025",
-            "Harbor": "https://static.wikia.nocookie.net/valorant/images/5/5c/Harbor_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20221018133900",
-            "Iso": "https://static.wikia.nocookie.net/valorant/images/5/5f/Iso_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20231031131018",
-            "Jett": "https://static.wikia.nocookie.net/valorant/images/e/e3/Jett_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202742",
-            "KAY/O": "https://static.wikia.nocookie.net/valorant/images/5/57/KAYO_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202747",
-            "Killjoy": "https://static.wikia.nocookie.net/valorant/images/8/81/Killjoy_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202751",
-            "Neon": "https://static.wikia.nocookie.net/valorant/images/f/fe/Neon_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202800",
-            "Omen": "https://static.wikia.nocookie.net/valorant/images/0/0e/Omen_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202807",
-            "Phoenix": "https://static.wikia.nocookie.net/valorant/images/9/90/Phoenix_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202811",
-            "Raze": "https://static.wikia.nocookie.net/valorant/images/6/6f/Raze_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202815",
-            "Reyna": "https://static.wikia.nocookie.net/valorant/images/3/36/Reyna_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202820",
-            "Sage": "https://static.wikia.nocookie.net/valorant/images/7/7e/Sage_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202824",
-            "Skye": "https://static.wikia.nocookie.net/valorant/images/7/7f/Skye_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202828",
-            "Sova": "https://static.wikia.nocookie.net/valorant/images/c/c5/Sova_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202832",
-            "Viper": "https://static.wikia.nocookie.net/valorant/images/8/85/Viper_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202837",
-            "Yoru": "https://static.wikia.nocookie.net/valorant/images/1/1e/Yoru_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202841"
-        }
+        # fullAgentImageLinks = {
+        #     "Astra": "https://static.wikia.nocookie.net/valorant/images/e/e0/Astra_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202708",
+        #     "Breach": "https://static.wikia.nocookie.net/valorant/images/2/24/Breach_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202713",
+        #     "Brimstone": "https://static.wikia.nocookie.net/valorant/images/8/81/Brimstone_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202719",
+        #     "Chamber": "https://static.wikia.nocookie.net/valorant/images/5/5d/Chamber_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202725",
+        #     "Clove": "https://static.wikia.nocookie.net/valorant/images/0/0b/Clove_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20240326163704",
+        #     "Cypher": "https://static.wikia.nocookie.net/valorant/images/5/55/Cypher_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202731",
+        #     "Deadlock": "https://static.wikia.nocookie.net/valorant/images/a/aa/Deadlock_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230627132700",
+        #     "Fade": "https://static.wikia.nocookie.net/valorant/images/e/e8/Fade_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202738",
+        #     "Gekko": "https://static.wikia.nocookie.net/valorant/images/a/a4/Gekko_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230304203025",
+        #     "Harbor": "https://static.wikia.nocookie.net/valorant/images/5/5c/Harbor_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20221018133900",
+        #     "Iso": "https://static.wikia.nocookie.net/valorant/images/5/5f/Iso_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20231031131018",
+        #     "Jett": "https://static.wikia.nocookie.net/valorant/images/e/e3/Jett_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202742",
+        #     "KAY/O": "https://static.wikia.nocookie.net/valorant/images/5/57/KAYO_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202747",
+        #     "Killjoy": "https://static.wikia.nocookie.net/valorant/images/8/81/Killjoy_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202751",
+        #     "Neon": "https://static.wikia.nocookie.net/valorant/images/f/fe/Neon_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202800",
+        #     "Omen": "https://static.wikia.nocookie.net/valorant/images/0/0e/Omen_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202807",
+        #     "Phoenix": "https://static.wikia.nocookie.net/valorant/images/9/90/Phoenix_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202811",
+        #     "Raze": "https://static.wikia.nocookie.net/valorant/images/6/6f/Raze_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202815",
+        #     "Reyna": "https://static.wikia.nocookie.net/valorant/images/3/36/Reyna_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202820",
+        #     "Sage": "https://static.wikia.nocookie.net/valorant/images/7/7e/Sage_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202824",
+        #     "Skye": "https://static.wikia.nocookie.net/valorant/images/7/7f/Skye_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202828",
+        #     "Sova": "https://static.wikia.nocookie.net/valorant/images/c/c5/Sova_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202832",
+        #     "Viper": "https://static.wikia.nocookie.net/valorant/images/8/85/Viper_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202837",
+        #     "Yoru": "https://static.wikia.nocookie.net/valorant/images/1/1e/Yoru_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202841"
+        # }
 
         img = Image.new('RGB', (1920, 910), color = (6, 9, 23))
         draw = ImageDraw.Draw(img)
 
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=65)
+        subfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=40)
         userfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=30)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100)
 
@@ -142,9 +143,24 @@ class valorant(commands.Cog):
         img.paste(mostPlayedAgent, (0,0))
         
         draw.text([605, 0 ], f"{accountInfo['data']['name']}", font=boldfnt, fill=(255,255,255))
-        draw.text([605+(len(agentName)*10), 0], f"{accountInfo['data']['tag']}", font=fnt, fill=(255,255,255))
+        draw.text([605+(len(agentName)*50), 30], f"{accountInfo['data']['tag']}", font=subfnt, fill=(255,255,255))
         
+        #Draw rectange to contain account info like rank, level and tier
+        draw.rectangle([(605, 150), (img.width, 455)], fill=(0,0,0), outline=(255,255,255), width=10)
+        
+        rank = gameStats[0]["rank"]
+        rank = rank.replace(" ", "_")
+        rank += "_Rank"
+
+        rankImage = Image.open(f"images/valorantRanks/{rank}.png")
+        rankImageBckg = Image.new("RGBA", rankImage.size, color=(6, 9, 23))
+        rankImageBckg.paste(rankImage, (0,0), mask = rankImage)
+        rankImageBckg.convert("RGB").save("rankImage.jpg")
+        rankImage = Image.open("rankImage.jpg")
+        rankImage = rankImage.resize([305, 305])
+        img.paste(rankImage, (605, 150))
         img.save("valorantAccountStats.png")
+        os.remove("rankImage.jpg")
 
 
 
@@ -152,6 +168,8 @@ class valorant(commands.Cog):
     @app_commands.command(name="get_valorant_account", description="Your total game stats from your past 10 competitive games")
     async def getUserAccount(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None):
         await interaction.response.defer()
+        if interaction.user.id not in settings.DEV:
+            interaction.followup.send("This command is still in development and not available.", ephemeral=True)
         message = await interaction.original_response()
 
         if riotuser == None:
@@ -652,7 +670,7 @@ class valorant(commands.Cog):
 
         img.save(f"gameStats{messageId}.png")
         os.remove("map.png")
-        for i in range(totalPlayerCount):
+        for i in range(totalPlayerCount+1):
             try:
                 os.remove(f"agentPfp{i}.png")
             except:
@@ -702,7 +720,11 @@ class valorant(commands.Cog):
 
         #Paste agent picture on the left side of the image
         agentProfilePicture = Image.open("agentPfp.png")
-        agentProfilePicture = agentProfilePicture.resize([200,200])
+        agentProfilePictureBckg = Image.new("RGBA", agentProfilePicture.size, color=(6, 9, 23))       
+        agentProfilePictureBckg.paste(agentProfilePicture, (0,0), mask=agentProfilePicture)
+        agentProfilePictureBckg.convert("RGB").save("fixedAgentPfp.jpg")
+        agentProfilePicture = Image.open("fixedAgentPfp.jpg")
+        agentProfilePicture = agentProfilePicture.resize([190,190])
         img.paste(agentProfilePicture, (0,108))
 
         #Place player stats on the right of the agent picture
@@ -724,6 +746,8 @@ class valorant(commands.Cog):
         img.save(f"userStats{messageId}.png")
         os.remove("map.png")
         os.remove("agentPfp.png")
+        os.remove("fixedAgentPfp.jpg")
+        
     
     #SECTION: GET LATEST GAMES
     @app_commands.command(name="get_latest_comp_game", description="Get your recent game stats")
