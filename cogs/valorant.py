@@ -220,8 +220,6 @@ class valorant(commands.Cog):
     @app_commands.describe(user="Get user's account stats", riotuser="Get stats from Riot user instead of Discord user. A Riot tag must be provided as well", refresh="Refresh your acccount stats")
     async def getUserAccount(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None, refresh:bool=False):
         await interaction.response.defer()
-        if str(interaction.user.id) not in settings.DEV:
-            interaction.followup.send("This command is still in development and not available.", ephemeral=True)
         message = await interaction.original_response()
 
         if not os.path.exists("riotdetails.json"):
