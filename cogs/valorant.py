@@ -93,6 +93,20 @@ class valorant(commands.Cog):
                             if i != "":
                                 file.write(f" {i},")
         
+    def getLengthAndHeightOfText(self, text:str, font:str, fontsize:int):
+        fnt = ImageFont.truetype(font=font, size=fontsize)
+        canvas = Image.new('RGB', (1000,1000))
+        canvasDraw = ImageDraw.Draw(canvas)
+        canvasDraw.text((10,10), text, font=fnt, fill=(255,255,255))
+        bbox = canvas.getbbox()
+
+        width = bbox[2] - bbox[0]
+        height = bbox[3] - bbox[1]
+
+        print("bbox:", str(bbox), "width:", str(width), "height:", str(height))
+
+        return width, height
+    
     #SECTION: Get a large widescreen of user stats           
     def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict):
 
@@ -102,7 +116,13 @@ class valorant(commands.Cog):
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=65)
         subfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=40)
         userfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=30)
-        boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100)
+
+        username = accountInfo['data']['name']
+
+        if len(username) <6:
+            boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100)
+        else:
+            boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100-((len(username)-6)*15))
 
         #Most played agent image
         agentName = otherStats["mostPlayedAgent"]["agentName"]
@@ -114,29 +134,13 @@ class valorant(commands.Cog):
         mostPlayedAgent = mostPlayedAgent.crop(((0,0,600,910)))
     
         img.paste(mostPlayedAgent, (0,0))
-        
-        # Draw user, name and region with background as player card
-        urllib.request.urlretrieve(accountInfo['data']['card']['wide'], "playerCard.png")
-        playerCard = Image.open("playerCard.png")
-        playerCard = playerCard.resize([594, 160])
 
-        playerCardFrg = Image.new("RGBA", playerCard.size, color=(6, 9, 23))
-        playerCardDraw = ImageDraw.Draw(playerCardFrg, "RGBA")
-        playerCardDraw.rectangle([(0,0), (594, 160)], fill=(6, 9, 23, 200))
-
-        playerCard.paste(playerCardFrg, (0,0), mask=playerCardFrg)
-        playerCard.save("playerCard.png")
-        playerCard= Image.open("playerCard.png")
-        img.paste(playerCard, (605, 0))
-        os.remove("playerCard.png")
-
-        draw.text([605, 0 ], f"{accountInfo['data']['name']}", font=boldfnt, fill=(255,255,255))
-        draw.text([605+(len(accountInfo['data']['name'])*55), 30], f"{accountInfo['data']['tag']}", font=subfnt, fill=(255,255,255))
-        draw.text([605+(len(accountInfo['data']['name']*55)), 60], f"{accountInfo['data']['region']}", font=subfnt, fill=(255,255,255))
+        width, height = self.getLengthAndHeightOfText(f"{accountInfo['data']['name']}", "fonts/OpenSans-Bold.ttf", 100)
+        draw.text([605, 0], f"{accountInfo['data']['name']}", font=boldfnt, fill=(255,255,255))
+        draw.text([605+(width+20), 30], f"#{accountInfo['data']['tag']}", font=subfnt, fill=(255,255,255))
+        draw.text([605+(width+20), 60], f"{accountInfo['data']['region']}", font=subfnt, fill=(255,255,255))
         
         #Draw rectange to contain account info like rank, level and tier
-        #draw.rounded_rectangle([(605, 150), (img.width, 500)], fill=(6, 9, 23), outline=(255,255,255), width=10, radius=7)
-        
         rank = gameStats[0]["rank"]
         rank = rank.replace(" ", "_")
         rank += "_Rank"
@@ -149,17 +153,70 @@ class valorant(commands.Cog):
         rankImage = rankImage.resize([280, 280])
         img.paste(rankImage, (615, 160))
     
-        draw.text([900, 160], f"Account level", font=fnt, fill=(255,255,255))
-        draw.text([1040, 300], f"{accountInfo['data']['account_level']}", font=fnt, fill=(255,255,255), align="left")
+    
+        draw.text([900, 220], f"Level", font=fnt, fill=(255,255,255))
+        width, height = self.getLengthAndHeightOfText(f"Level", "fonts/OpenSans-Regular.ttf", 65)
+        draw.text([900, 220+height+30], f"{accountInfo['data']['account_level']}", font=subfnt, fill=(255,255,255), align="left")
 
+        # Draw average stats in the last ten games
+        width, height = self.getLengthAndHeightOfText("ADR", "fonts/OpenSans-Regular.ttf", 65)
+        for i in range(len(averagedStats)):
+            draw.text([620,550+(i*(height+25))], f"{list(averagedStats.keys())[i]}", font=subfnt, fill=(156, 156, 156))
+            draw.text([700, 550+((i*(height+25))+(height/2))], f"{list(averagedStats.values())[i]}", font=fnt, fill=(255,255,255))
+    
+        # Draw the line dividing average stats and match history, then draw match history
+        draw.line([(1200, 0), (1200, img.height)], fill=(256,256,256), width=5)
+        matchFnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=25)
+        for i in range(len(gameStats)):
+            game = gameStats[i]
+            scoreline = game["matchDetails"]["playerSidedScore"]
+            scoreline = scoreline.split(" - ")
+            if int(scoreline[0]) > int(scoreline[1]):
+                win = True
+            elif int(scoreline[0]) < int(scoreline[1]):
+                win = False
+            else:
+                win = None
 
+            urllib.request.urlretrieve(game["agentPfp"], f"agentPfp{i}.png")
+            agentPfp = Image.open(f"agentPfp{i}.png")
+            agentPfp = agentPfp.resize([200,200])
 
+            if win:
+                agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(3, 54, 8))
+            elif win == False:
+                agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(43, 2, 6))
+            else:
+                agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(125, 120, 24))
+            
+            agentPfpBckg.paste(agentPfp, (0,0), mask = agentPfp)
+            agentPfpBckg.convert("RGB").save(f"agentPfp{i}.jpg")
+            agentPfp = Image.open(f"agentPfp{i}.jpg")
+            agentPfp = agentPfp.resize([91,91])
+            img.paste(agentPfp, (1210, 0+(i*91)))
+
+            os.remove(f"agentPfp{i}.png")
+            os.remove(f"agentPfp{i}.jpg")
+
+            if win:
+                draw.rectangle([(1200, 0+(i*91)), (1210, 200+(i*91))], fill=(0,255,0))
+                draw.rounded_rectangle([(1301, 0+(i*91)), (1920, 200+(i*91))], fill=(3, 54, 8), radius= 2)
+            elif win == False:
+                draw.rectangle([(1200, 0+(i*91)), (1210, 200+(i*91))], fill=(255,0,0))
+                draw.rounded_rectangle([(1301, 0+(i*91)), (1920, 200+(i*91))], fill=(43, 2, 6), radius= 2)
+            else:
+                draw.rectangle([(1200, 0+(i*91)), (1210, 200+(i*91))], fill=(255, 255, 0))
+                draw.rounded_rectangle([(1301, 0+(i*91)), (1920, 200+(i*91))], fill=(125, 120, 24), radius= 2)
+
+            draw.text([1309, 0+(i*91)], f"{game['matchDetails']['map']}\n{game['matchDetails']['playerSidedScore']}", font=matchFnt, fill=(255,255,255))
+        
         img.save("valorantAccountStats.png")
         os.remove("rankImage.jpg")
 
+
         
     
-    @app_commands.command(name="get_valorant_account", description="Your total game stats from your past 10 competitive games")
+    @app_commands.command(name="valorant_account_summary", description="Your total game stats from your past 10 competitive games")
     @app_commands.describe(user="Get user's account stats", riotuser="Get stats from Riot user instead of Discord user. A Riot tag must be provided as well", refresh="Refresh your acccount stats")
     async def getUserAccount(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None, refresh:bool=False):
         await interaction.response.defer()
@@ -205,11 +262,14 @@ class valorant(commands.Cog):
         if response["status"] != 200:
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
 
-        userStatsFromMatchHistory = await self.calculateUserStatsFromGames(response, targetAccount)
-        matchStats = userStatsFromMatchHistory["matchStats"]
-        averagedStats = userStatsFromMatchHistory["averagedStats"]
-        otherStats = userStatsFromMatchHistory["otherStats"]
-        gameStats = userStatsFromMatchHistory["gameStats"]
+        try:
+            userStatsFromMatchHistory = await self.calculateUserStatsFromGames(response, targetAccount)
+            matchStats = userStatsFromMatchHistory["matchStats"]
+            averagedStats = userStatsFromMatchHistory["averagedStats"]
+            otherStats = userStatsFromMatchHistory["otherStats"]
+            gameStats = userStatsFromMatchHistory["gameStats"]
+        except TypeError:
+            return await interaction.followup.send("Failure! Stats are unfetchable.", ephemeral=True)
 
         self.createValorantAccountImage(targetAccount, matchStats, averagedStats, gameStats, otherStats)
 
@@ -268,14 +328,18 @@ class valorant(commands.Cog):
                 scoreline = scoreline.split(" - ")
                 if int(scoreline[0])> int(scoreline[1]):
                     win = True
-                else:
+                elif int(scoreline[0]) < int(scoreline[1]):
                     win = False
+                else:
+                    agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(125, 120, 24))
 
                 agentPfp = Image.open(f"agentPfp{i}.png")
                 if win:
                     agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(3, 54, 8))
-                else:
+                elif win == False:
                     agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(43, 2, 6))
+                else:
+                    agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(125, 120, 24))
                 agentPfpBckg.paste(agentPfp, (0,0), mask = agentPfp)
                 os.remove(f"agentPfp{i}.png")
                 agentPfpBckg.convert("RGB").save(f"agentPfp{i}.jpg")
@@ -291,9 +355,6 @@ class valorant(commands.Cog):
                     draw.rounded_rectangle([(200, 320+(j*200)), ((img.width, 520+(j*200)))], fill=(255,0,0,40), radius= 2)
                 os.remove(f"agentPfp{i}.jpg")
 
- 
-
-
                 draw.text((210, 320+(j*200)), f"{game['matchDetails']['map']}\n{game['matchDetails']['playerSidedScore']}", font=fnt, fill=(255,255,255))
                 draw.text((210, 430+(j*200)), f"{game['KDA']}\n{str(game['matchDetails']['mode'])}", font=userfnt, fill=(255,255,255))
                 draw.text((410, 320+(j*200)), f"{game['ACS']}", font=fnt, fill=(255,255,255))
@@ -303,7 +364,7 @@ class valorant(commands.Cog):
             print("saving userCollectedStats")
             img.save(f"userCollectedStats{image}.png")
     
-    async def calculateUserStatsFromGames(self, response, user):
+    async def calculateUserStatsFromGames(self, response, user): # Returns [matchStats, averagedStats, gameStats, otherStats] or an error
         gameStats = [] # specific player stats of a game. contains all the game stats in the format of {"matchDetails": {"map": map, "playerSidedScore": "Red - Blue", "mode": mode}, "kills": kills, "deaths": deaths, "assists": assists, "KDA": "kills/deaths/assists", "KDR": kills/deaths, "ACS": ACS, "ADR": ADR, "DD": DD, "rank": rank, "team": team, "HS": HS, "agentPfp": agentPfp}
         averagedStats = {"ADR": 0, "ACS": 0, "KDR": 0, "HS": 0}
 
@@ -320,16 +381,19 @@ class valorant(commands.Cog):
         def sortLowestToHighest(arr:list):
             length = len(arr)
             print(arr)
-            for i in arr:
-                for j in arr:
-                    iagentName = list(i.keys())[0]
-                    jagentName = list(j.keys())[0]
+            try:
+                for i in arr:
+                    for j in arr:
+                        iagentName = list(i.keys())[0]
+                        jagentName = list(j.keys())[0]
 
-                    print(f"{iagentName}:{i[iagentName]['timesPlayed']}, {jagentName}:{j[jagentName]['timesPlayed']}")
-                    if i[iagentName]['timesPlayed'] > j[jagentName]['timesPlayed']:
-                        arr[arr.index(i)], arr[arr.index(j)] = arr[arr.index(j)], arr[arr.index(i)]
-            
-            return arr[0][list(arr[0].keys())[0]] # returns most played agent's {agentName:{timesPlayed: count, agentPfp: url}}
+                        print(f"{iagentName}:{i[iagentName]['timesPlayed']}, {jagentName}:{j[jagentName]['timesPlayed']}")
+                        if i[iagentName]['timesPlayed'] > j[jagentName]['timesPlayed']:
+                            arr[arr.index(i)], arr[arr.index(j)] = arr[arr.index(j)], arr[arr.index(i)]
+                
+                return arr[0][list(arr[0].keys())[0]] # returns most played agent's {agentName:{timesPlayed: count, agentPfp: url}}
+            except IndexError:
+                return None
 
         for l in range(len(response["data"])):
             i = response["data"][l]
@@ -365,6 +429,7 @@ class valorant(commands.Cog):
                 "HS": f'{round((requestedUser["stats"]["headshots"]/(requestedUser["stats"]["bodyshots"]+requestedUser["stats"]["headshots"]+requestedUser["stats"]["legshots"])*100),2)}%', #string because of % sign
                 "agentPfp": requestedUser["assets"]["agent"]["small"] #string
             })
+            print(gameStats[l])
             try:
                 mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": mostPlayedAgent[requestedUser["character"]]["timesPlayed"] + 1, "agentPfp": requestedUser["assets"]["agent"]["small"], "agentName": requestedUser["character"]}})
             except KeyError:
@@ -378,12 +443,15 @@ class valorant(commands.Cog):
                 otherStats.update({"winrate": {"wins": otherStats["winrate"]["wins"], "losses": otherStats["winrate"]["losses"], "draws": otherStats["winrate"]["draws"] + 1}})
             
             matchStats.append([matchDetails, playerDetails, teamDetails])
+        
         for i in mostPlayedAgent:
+            print("appending", i, mostPlayedAgent[i])
             mostPlayedAgentArr.append({i: mostPlayedAgent[i]}) # appends {agent name: {timesPlayed: count, agentPfp: url}}
 
         # Sorts the most played agent by the amount of times played. This function returns an array of the most played agents in order of most played to least played.
         mostPlayedAgent = sortLowestToHighest(mostPlayedAgentArr) # returns the most played agent's [{timesPlayed: count}, {agentPfp: url}]
-        
+        if mostPlayedAgent == None:
+            return "No favourite agent found."
         # Calculate the average stats for all comp, unrated and premier games requested
         for i in range(len(gameStats)):
             specificGameStats = gameStats[i]
@@ -404,8 +472,9 @@ class valorant(commands.Cog):
 
 
     @app_commands.command(name="get_valorant_stats", description="Get your valorant stats")
-    @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 10.")
-    async def getGames(self, interaction:discord.Interaction, user:discord.Member=None, amount:int=5):
+    @app_commands.choices(mode=[app_commands.Choice(name="Competitive", value="competitive"), app_commands.Choice(name="Unrated", value="unrated"), app_commands.Choice(name="Premier", value="premier")])
+    @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 10.", mode = "Mode of the games to get.")
+    async def getGames(self, interaction:discord.Interaction, user:discord.Member=None, amount:int=5, mode:app_commands.Choice[str]=None):
         await interaction.response.defer()
         message = await interaction.original_response()
 
@@ -429,18 +498,25 @@ class valorant(commands.Cog):
 
         logger.info(f"Getting games for {userAccount['data']['name']}")        
         region = userAccount['data']['region']
-        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?size={amount}")
+        if mode == None:
+            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?size={amount}")
+        else:
+            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?mode={mode.value}&size={amount}")
         response = response.json()
 
 
         if(response["status"] != 200):
-            return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
+            logger.info(response)
+            return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
         
-        userStatsOverMatchHistory = await self.calculateUserStatsFromGames(response, userAccount) # returns {"matchStats": matchStats, averagedStats, gameStats, otherStats
-        allGamesData = userStatsOverMatchHistory["matchStats"]
-        averagedStats = userStatsOverMatchHistory["averagedStats"]
-        otherStats = userStatsOverMatchHistory["otherStats"]
-        gameStats = userStatsOverMatchHistory["gameStats"]
+        try:
+            userStatsOverMatchHistory = await self.calculateUserStatsFromGames(response, userAccount) # returns {"matchStats": matchStats, averagedStats, gameStats, otherStats
+            allGamesData = userStatsOverMatchHistory["matchStats"]
+            averagedStats = userStatsOverMatchHistory["averagedStats"]
+            otherStats = userStatsOverMatchHistory["otherStats"]
+            gameStats = userStatsOverMatchHistory["gameStats"]
+        except TypeError:
+            return await interaction.followup.send("Failure! Stats are unfetchable.", ephemeral=True)
 
         await self.createStatsImage(averagedStats, gameStats, otherStats)
 
