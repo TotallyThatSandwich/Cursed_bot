@@ -93,45 +93,18 @@ class valorant(commands.Cog):
                             if i != "":
                                 file.write(f" {i},")
         
-    #SECTION: Get a large widescreen of user stats
-                                
+    #SECTION: Get a large widescreen of user stats           
     def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict):
-        # fullAgentImageLinks = {
-        #     "Astra": "https://static.wikia.nocookie.net/valorant/images/e/e0/Astra_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202708",
-        #     "Breach": "https://static.wikia.nocookie.net/valorant/images/2/24/Breach_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202713",
-        #     "Brimstone": "https://static.wikia.nocookie.net/valorant/images/8/81/Brimstone_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202719",
-        #     "Chamber": "https://static.wikia.nocookie.net/valorant/images/5/5d/Chamber_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202725",
-        #     "Clove": "https://static.wikia.nocookie.net/valorant/images/0/0b/Clove_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20240326163704",
-        #     "Cypher": "https://static.wikia.nocookie.net/valorant/images/5/55/Cypher_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202731",
-        #     "Deadlock": "https://static.wikia.nocookie.net/valorant/images/a/aa/Deadlock_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230627132700",
-        #     "Fade": "https://static.wikia.nocookie.net/valorant/images/e/e8/Fade_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202738",
-        #     "Gekko": "https://static.wikia.nocookie.net/valorant/images/a/a4/Gekko_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20230304203025",
-        #     "Harbor": "https://static.wikia.nocookie.net/valorant/images/5/5c/Harbor_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20221018133900",
-        #     "Iso": "https://static.wikia.nocookie.net/valorant/images/5/5f/Iso_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20231031131018",
-        #     "Jett": "https://static.wikia.nocookie.net/valorant/images/e/e3/Jett_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202742",
-        #     "KAY/O": "https://static.wikia.nocookie.net/valorant/images/5/57/KAYO_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202747",
-        #     "Killjoy": "https://static.wikia.nocookie.net/valorant/images/8/81/Killjoy_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202751",
-        #     "Neon": "https://static.wikia.nocookie.net/valorant/images/f/fe/Neon_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202800",
-        #     "Omen": "https://static.wikia.nocookie.net/valorant/images/0/0e/Omen_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202807",
-        #     "Phoenix": "https://static.wikia.nocookie.net/valorant/images/9/90/Phoenix_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202811",
-        #     "Raze": "https://static.wikia.nocookie.net/valorant/images/6/6f/Raze_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202815",
-        #     "Reyna": "https://static.wikia.nocookie.net/valorant/images/3/36/Reyna_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202820",
-        #     "Sage": "https://static.wikia.nocookie.net/valorant/images/7/7e/Sage_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202824",
-        #     "Skye": "https://static.wikia.nocookie.net/valorant/images/7/7f/Skye_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202828",
-        #     "Sova": "https://static.wikia.nocookie.net/valorant/images/c/c5/Sova_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202832",
-        #     "Viper": "https://static.wikia.nocookie.net/valorant/images/8/85/Viper_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202837",
-        #     "Yoru": "https://static.wikia.nocookie.net/valorant/images/1/1e/Yoru_Artwork_Full.png/revision/latest/scale-to-width-down/1000?cb=20220810202841"
-        # }
 
-        img = Image.new('RGB', (1920, 910), color = (6, 9, 23))
-        draw = ImageDraw.Draw(img)
+        img = Image.new('RGBA', (1920, 910), color = (6, 9, 23))
+        draw = ImageDraw.Draw(img, "RGBA")
 
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=65)
         subfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=40)
         userfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=30)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100)
 
-        #Draw account info and most played agent
+        #Most played agent image
         agentName = otherStats["mostPlayedAgent"]["agentName"]
         for i in agentName:
             if str(i).isalpha() == False:
@@ -142,11 +115,27 @@ class valorant(commands.Cog):
     
         img.paste(mostPlayedAgent, (0,0))
         
+        # Draw user, name and region with background as player card
+        urllib.request.urlretrieve(accountInfo['data']['card']['wide'], "playerCard.png")
+        playerCard = Image.open("playerCard.png")
+        playerCard = playerCard.resize([594, 160])
+
+        playerCardFrg = Image.new("RGBA", playerCard.size, color=(6, 9, 23))
+        playerCardDraw = ImageDraw.Draw(playerCardFrg, "RGBA")
+        playerCardDraw.rectangle([(0,0), (594, 160)], fill=(6, 9, 23, 200))
+
+        playerCard.paste(playerCardFrg, (0,0), mask=playerCardFrg)
+        playerCard.save("playerCard.png")
+        playerCard= Image.open("playerCard.png")
+        img.paste(playerCard, (605, 0))
+        os.remove("playerCard.png")
+
         draw.text([605, 0 ], f"{accountInfo['data']['name']}", font=boldfnt, fill=(255,255,255))
-        draw.text([605+(len(agentName)*50), 30], f"{accountInfo['data']['tag']}", font=subfnt, fill=(255,255,255))
+        draw.text([605+(len(accountInfo['data']['name'])*55), 30], f"{accountInfo['data']['tag']}", font=subfnt, fill=(255,255,255))
+        draw.text([605+(len(accountInfo['data']['name']*55)), 60], f"{accountInfo['data']['region']}", font=subfnt, fill=(255,255,255))
         
         #Draw rectange to contain account info like rank, level and tier
-        draw.rectangle([(605, 150), (img.width, 455)], fill=(0,0,0), outline=(255,255,255), width=10)
+        #draw.rounded_rectangle([(605, 150), (img.width, 500)], fill=(6, 9, 23), outline=(255,255,255), width=10, radius=7)
         
         rank = gameStats[0]["rank"]
         rank = rank.replace(" ", "_")
@@ -157,34 +146,50 @@ class valorant(commands.Cog):
         rankImageBckg.paste(rankImage, (0,0), mask = rankImage)
         rankImageBckg.convert("RGB").save("rankImage.jpg")
         rankImage = Image.open("rankImage.jpg")
-        rankImage = rankImage.resize([305, 305])
-        img.paste(rankImage, (605, 150))
+        rankImage = rankImage.resize([280, 280])
+        img.paste(rankImage, (615, 160))
+    
+        draw.text([900, 160], f"Account level", font=fnt, fill=(255,255,255))
+        draw.text([1040, 300], f"{accountInfo['data']['account_level']}", font=fnt, fill=(255,255,255), align="left")
+
+
+
         img.save("valorantAccountStats.png")
         os.remove("rankImage.jpg")
 
-
-
+        
     
     @app_commands.command(name="get_valorant_account", description="Your total game stats from your past 10 competitive games")
-    async def getUserAccount(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None):
+    @app_commands.describe(user="Get user's account stats", riotuser="Get stats from Riot user instead of Discord user. A Riot tag must be provided as well", refresh="Refresh your acccount stats")
+    async def getUserAccount(self, interaction:discord.Interaction, user:discord.Member=None, riotuser:str=None, riottag:str=None, refresh:bool=False):
         await interaction.response.defer()
-        if interaction.user.id not in settings.DEV:
+        if str(interaction.user.id) not in settings.DEV:
             interaction.followup.send("This command is still in development and not available.", ephemeral=True)
         message = await interaction.original_response()
 
+        if not os.path.exists("riotdetails.json"):
+            print(os.path.exists("riotdetails.json"))
+            return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
+
+        if user == None:
+            print("using interaction user id")
+            userId = str(interaction.user.id)
+        else:
+            print("using user id")
+            userId = str(user.id)
+    
         if riotuser == None:
-            if os.path.exists("riotdetails.json"):
+            if refresh == True:
+                targetAccount = self.refreshLoginForValorantDetails(userId)
+            else:
                 with open("riotdetails.json", "r") as file:
                         try:
                             riotDetails = json.load(file)
-                            if user == None:
-                                targetAccount = riotDetails[str(interaction.user.id)]
-                            else:
-                                targetAccount = riotDetails[str(user.id)]
-                        except:
+                            print(userId)
+                            targetAccount = riotDetails[userId]
+                        except Exception as e:
+                            print(e)
                             return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
-            else:
-                return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
         else:
             if riottag == None:
                 return await interaction.followup.send("Please provide a riot tag", ephemeral=True)
@@ -194,7 +199,8 @@ class valorant(commands.Cog):
             
 
         print("target account:", str(targetAccount))
-        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/ap/{targetAccount['data']['puuid']}?mode=competitive&size=10")
+        region = targetAccount["data"]["region"]
+        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{targetAccount['data']['puuid']}?mode=competitive&size=10")
         response = response.json()
         if response["status"] != 200:
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
@@ -219,7 +225,7 @@ class valorant(commands.Cog):
         #print("images required:", imagesRequired)
         for image in range(imagesRequired):
             img = Image.new('RGB', (1200, 1400), color = (6, 9, 23))
-            draw = ImageDraw.Draw(img)
+            draw = ImageDraw.Draw(img, "RGBA")
 
             fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=45)
             userfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=30)
@@ -258,12 +264,36 @@ class valorant(commands.Cog):
                 if i > 4:
                     j = i - (image*5)
                 
+                scoreline = game["matchDetails"]["playerSidedScore"]
+                scoreline = scoreline.split(" - ")
+                if int(scoreline[0])> int(scoreline[1]):
+                    win = True
+                else:
+                    win = False
+
                 agentPfp = Image.open(f"agentPfp{i}.png")
+                if win:
+                    agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(3, 54, 8))
+                else:
+                    agentPfpBckg = Image.new("RGBA", agentPfp.size, color=(43, 2, 6))
+                agentPfpBckg.paste(agentPfp, (0,0), mask = agentPfp)
+                os.remove(f"agentPfp{i}.png")
+                agentPfpBckg.convert("RGB").save(f"agentPfp{i}.jpg")
+                agentPfp = Image.open(f"agentPfp{i}.jpg")
                 agentPfp = agentPfp.resize([200,200])
                 img.paste(agentPfp, (0, 320+(j*200)))
-                os.remove(f"agentPfp{i}.png")
 
-                #print("j:", j)
+                if win:
+                    draw.rectangle([(0, 320+(j*200)), ((2, 520+(j*200)))], fill=(0,255,0))
+                    draw.rounded_rectangle([(200, 320+(j*200)), ((img.width, 520+(j*200)))], fill=(0,255,0,40), radius= 2)
+                else:
+                    draw.rectangle([(0, 320+(j*200)), ((2, 520+(j*200)))], fill=(255,0,0))
+                    draw.rounded_rectangle([(200, 320+(j*200)), ((img.width, 520+(j*200)))], fill=(255,0,0,40), radius= 2)
+                os.remove(f"agentPfp{i}.jpg")
+
+ 
+
+
                 draw.text((210, 320+(j*200)), f"{game['matchDetails']['map']}\n{game['matchDetails']['playerSidedScore']}", font=fnt, fill=(255,255,255))
                 draw.text((210, 430+(j*200)), f"{game['KDA']}\n{str(game['matchDetails']['mode'])}", font=userfnt, fill=(255,255,255))
                 draw.text((410, 320+(j*200)), f"{game['ACS']}", font=fnt, fill=(255,255,255))
@@ -380,7 +410,7 @@ class valorant(commands.Cog):
         message = await interaction.original_response()
 
         if amount > 10 or amount < 1:
-            return await interaction.followup.send("Amount of games cannot exceed 20 or be under 1", ephemeral=True)
+            return await interaction.followup.send("Amount of games cannot exceed 10 or be under 1", ephemeral=True)
         URL = "https://api.henrikdev.xyz"
         userAccount = {}
 
@@ -396,9 +426,12 @@ class valorant(commands.Cog):
                         return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
         else:
             return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
-        
-        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/ap/{userAccount['data']['puuid']}?size={amount}")
+
+        logger.info(f"Getting games for {userAccount['data']['name']}")        
+        region = userAccount['data']['region']
+        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?size={amount}")
         response = response.json()
+
 
         if(response["status"] != 200):
             return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
@@ -777,8 +810,8 @@ class valorant(commands.Cog):
             "mode": "competitive",
             "size": 1
         }
-
-        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/ap/{fetchParameters['puuid']}?mode={fetchParameters['mode']}&size={fetchParameters['size']}")
+        region = userAccount["data"]["region"]
+        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{fetchParameters['puuid']}?mode={fetchParameters['mode']}&size={fetchParameters['size']}")
         response = response.json()
 
         if(response["status"] != 200):
@@ -797,19 +830,38 @@ class valorant(commands.Cog):
         with open("recentGames.txt", "a+") as file:
             file.write(f" {message},")
 
-
+    async def refreshLoginForValorantDetails(self, interactionId:str): # Returns either an error string or the user's details as well as updating in the json file
+        if not os.path.exists("riotdetails.json"):
+            return "User has not logged in yet! They must run /login_for_valorant before trying this command"
+    
+        with open("riotdetails.json", "r") as file:
+            riotDetails:dict = json.load(file)
+            if str(interactionId) not in riotDetails:
+                return "User has not logged in yet! They must run /login_for_valorant before trying this command"
+            else:
+                userAccount = riotDetails[str(interactionId)]
         
-    @app_commands.command(name="login_for_valorant", description="Login into your account")
-    @app_commands.describe(username = "Enter your Valorant username. If you leave it empty, it will delete your information.")
-    async def loginValorant(self, interaction:discord.Interaction, username:str, tag:str):
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{userAccount['data']['name']}/{userAccount['data']['tag']}")
+            response.json()
+
+            if(response["status"] != 200):
+                return f"Error with the status of {response['status']}"
+
+            riotDetails.update({str(interactionId): response})
+
+            with open("riotdetails.json", "w") as writeFile:
+                json.dump(riotDetails, writeFile)
+                return riotDetails[str(interactionId)]
+    
+    async def loginForValorant(self, interactionId:str, username:str, tag:str): # This function logs in user by assinging riot account details with their discord id
         if(username == None):
             with open("riotdetails.json", "r") as file:
                 riotDetails = json.load(file)
-                riotDetails.pop(str(interaction.user.id))
+                riotDetails.pop(str(interactionId))
                 with open("riotdetails.json", "w") as file:
                     json.dump(riotDetails, file)
             
-            return await interaction.response.send_message("Deleting your information...", ephemeral=True, delete_after=10)
+            return f"Deleting {interactionId}'s details"
         
         
         if("#" in str(tag)):
@@ -826,24 +878,31 @@ class valorant(commands.Cog):
         print("\n"+str(response)+"\n")
 
         if(response["status"] != 200):
-            return await interaction.response.send_message(f"Invalid Riot ID or Tag with the error of {response['status']}", ephemeral=True)
+            return f"Invalid Riot ID or Tag with the error of {response['status']}"
 
         riotDetails = {}
         try:
         #opens the file and reads the json
             with open ("riotdetails.json", "r") as file:
                 riotDetails = json.load(file)
-                riotDetails.update({str(interaction.user.id): response})
+                riotDetails.update({str(interactionId): response})
                 with open ("riotdetails.json", "w") as file:
                     json.dump(riotDetails, file)
                     
-            await interaction.response.send_message("Logged in!", ephemeral=True)
+            return "Updated details!"
         except Exception as e:
             with open ("riotdetails.json", "w+") as file:
-                riotDetails.update({str(interaction.user.id): response})
+                riotDetails.update({str(interactionId): response})
                 json.dump(riotDetails, file)
         
-            await interaction.response.send_message("Logged in!", ephemeral=True)
+            return "Updated details!"
+        
+    @app_commands.command(name="login_for_valorant", description="Login into your account")
+    @app_commands.describe(username = "Enter your Valorant username. If you leave it empty, it will delete your information.")
+    async def loginValorant(self, interaction:discord.Interaction, username:str, tag:str):
+        await interaction.response.defer()
+        response = await self.loginForValorant(interaction.user.id, username, tag)
+        await interaction.followup.send(response, ephemeral=True)
 
     @app_commands.command(name="dev_valorant_clear", description="Clears the recent games list and any images that wasn't deleted")
     async def clearRecentGames(self, interaction:discord.Interaction):
