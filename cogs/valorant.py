@@ -120,8 +120,10 @@ class valorant(commands.Cog):
         username = accountInfo['data']['name']
 
         if len(username) <6:
+            boldFntSize = 100
             boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100)
         else:
+            boldFntSize = 100-((len(username)-6)*15)
             boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100-((len(username)-6)*15))
 
         #Most played agent image
@@ -135,7 +137,7 @@ class valorant(commands.Cog):
     
         img.paste(mostPlayedAgent, (0,0))
 
-        width, height = self.getLengthAndHeightOfText(f"{accountInfo['data']['name']}", "fonts/OpenSans-Bold.ttf", 100)
+        width, height = self.getLengthAndHeightOfText(f"{accountInfo['data']['name']}", "fonts/OpenSans-Bold.ttf", boldFntSize)
         draw.text([605, 0], f"{accountInfo['data']['name']}", font=boldfnt, fill=(255,255,255))
         draw.text([605+(width+20), 30], f"#{accountInfo['data']['tag']}", font=subfnt, fill=(255,255,255))
         draw.text([605+(width+20), 60], f"{accountInfo['data']['region']}", font=subfnt, fill=(255,255,255))
