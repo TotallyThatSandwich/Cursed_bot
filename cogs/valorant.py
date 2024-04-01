@@ -66,6 +66,7 @@ class valorant(commands.Cog):
         self.bot = bot,
         self.matchStats = matchStats, # matchStats is a list of the match data in the format of [matchDetails, playerDetails, teamDetails]
         self.userAccount = userAccount # userAccount is the user's account details from the API
+        self.authorizationKey = settings.VALORANT_KEY # authorizationKey is the API key for the valorant API
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -254,13 +255,13 @@ class valorant(commands.Cog):
             if riottag == None:
                 return await interaction.followup.send("Please provide a riot tag", ephemeral=True)
             
-            targetAccount = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{riotuser}/{riottag}")
+            targetAccount = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{riotuser}/{riottag}", header={"Authorization": self.authorizationKey})
             targetAccount = targetAccount.json()
             
 
         print("target account:", str(targetAccount))
         region = targetAccount["data"]["region"]
-        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{targetAccount['data']['puuid']}?mode=competitive&size=10")
+        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{targetAccount['data']['puuid']}?mode=competitive&size=10", header={"Authorization": self.authorizationKey})
         response = response.json()
         if response["status"] != 200:
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
@@ -502,9 +503,9 @@ class valorant(commands.Cog):
         logger.info(f"Getting games for {userAccount['data']['name']}")        
         region = userAccount['data']['region']
         if mode == None:
-            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?size={amount}")
+            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?size={amount}", header={"Authorization": self.authorizationKey})
         else:
-            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?mode={mode.value}&size={amount}")
+            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?mode={mode.value}&size={amount}", header={"Authorization": self.authorizationKey})
         response = response.json()
 
 
@@ -890,7 +891,7 @@ class valorant(commands.Cog):
             "size": 1
         }
         region = userAccount["data"]["region"]
-        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{fetchParameters['puuid']}?mode={fetchParameters['mode']}&size={fetchParameters['size']}")
+        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{fetchParameters['puuid']}?mode={fetchParameters['mode']}&size={fetchParameters['size']}", header={"Authorization": self.authorizationKey})
         response = response.json()
 
         if(response["status"] != 200):
@@ -920,7 +921,7 @@ class valorant(commands.Cog):
             else:
                 userAccount = riotDetails[str(interactionId)]
         
-            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{userAccount['data']['name']}/{userAccount['data']['tag']}")
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{userAccount['data']['name']}/{userAccount['data']['tag']}", header={"Authorization": self.authorizationKey})
             response.json()
 
             if(response["status"] != 200):
@@ -951,7 +952,7 @@ class valorant(commands.Cog):
             "tag": str(tag)
         }
 
-        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{fetchRequests['name']}/{fetchRequests['tag']}")
+        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{fetchRequests['name']}/{fetchRequests['tag']}", header={"Authorization": self.authorizationKey})
         response = response.json()
 
         print("\n"+str(response)+"\n")
@@ -1020,7 +1021,7 @@ class valorant(commands.Cog):
         await interaction.response.defer()
         team = {}
 
-        response = requests.get(url="https://api.henrikdev.xyz/valorant/v1/premier/search?name=GCGSval&tag=GCVT")
+        response = requests.get(url="https://api.henrikdev.xyz/valorant/v1/premier/search?name=GCGSval&tag=GCVT", header={"Authorization": self.authorizationKey})
         response = response.json()
 
         if(response["status"] != 200):
@@ -1039,9 +1040,9 @@ class valorant(commands.Cog):
         await interaction.response.defer()
         team = {}
         if tag != None:
-            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}")
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}", header={"Authorization": self.authorizationKey})
         else:
-            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}&tag={tag}")
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}&tag={tag}", header={"Authorization": self.authorizationKey})
 
         response = response.json()
 
