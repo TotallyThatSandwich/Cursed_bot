@@ -143,17 +143,19 @@ class valorant(commands.Cog):
         draw.text([605+(width+20), 60], f"{accountInfo['data']['region']}", font=subfnt, fill=(255,255,255))
         
         #Draw rectange to contain account info like rank, level and tier
-        rank = gameStats[0]["rank"]
-        rank = rank.replace(" ", "_")
-        rank += "_Rank"
 
-        rankImage = Image.open(f"images/valorantRanks/{rank}.png")
-        rankImageBckg = Image.new("RGBA", rankImage.size, color=(6, 9, 23))
-        rankImageBckg.paste(rankImage, (0,0), mask = rankImage)
-        rankImageBckg.convert("RGB").save("rankImage.jpg")
-        rankImage = Image.open("rankImage.jpg")
-        rankImage = rankImage.resize([280, 280])
-        img.paste(rankImage, (615, 160))
+        if gameStats[0]["rank"] != "Unrated":
+            rank = gameStats[0]["rank"]
+            rank = rank.replace(" ", "_")
+            rank += "_Rank"
+
+            rankImage = Image.open(f"images/valorantRanks/{rank}.png")
+            rankImageBckg = Image.new("RGBA", rankImage.size, color=(6, 9, 23))
+            rankImageBckg.paste(rankImage, (0,0), mask = rankImage)
+            rankImageBckg.convert("RGB").save("rankImage.jpg")
+            rankImage = Image.open("rankImage.jpg")
+            rankImage = rankImage.resize([280, 280])
+            img.paste(rankImage, (615, 160))
     
     
         draw.text([900, 220], f"Level", font=fnt, fill=(255,255,255))
