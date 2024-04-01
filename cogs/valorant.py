@@ -156,6 +156,7 @@ class valorant(commands.Cog):
             rankImage = Image.open("rankImage.jpg")
             rankImage = rankImage.resize([280, 280])
             img.paste(rankImage, (615, 160))
+            os.remove("rankImage.jpg")
     
     
         draw.text([900, 220], f"Level", font=fnt, fill=(255,255,255))
@@ -215,7 +216,7 @@ class valorant(commands.Cog):
             draw.text([1309, 0+(i*91)], f"{game['matchDetails']['map']}\n{game['matchDetails']['playerSidedScore']}", font=matchFnt, fill=(255,255,255))
         
         img.save("valorantAccountStats.png")
-        os.remove("rankImage.jpg")
+        
 
 
         
