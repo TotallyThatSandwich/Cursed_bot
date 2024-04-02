@@ -59,14 +59,47 @@ class selectMatchUI(discord.ui.View):
         except TypeError as e:
             print(e)
         
+class accountSummaryUI(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+
+    # @discord.ui.button(label="Agent stats", style=discord.ButtonStyle.blurple, custom_id="agentStats")
+    # async def agentStats(self, interaction:discord.Interaction, button:discord.ui.Button):
+    #     await interaction.response.edit_message(content="Select a match to view", view=selectMatchUI())
+    
+    @discord.ui.button(label="Crosshairs", style=discord.ButtonStyle.blurple, custom_id="crosshair")
+    async def crosshair(self, interaction:discord.Interaction, button:discord.ui.Button):
+        crosshairs = valorant.getUserValorantCrosshairs(str(interaction.user.id))
+        if crosshairs == []:
+            pass
+        else:
+            await valorant.createCrosshairImage(crosshairs)
+            crosshairSelect = crosshairSelectUI()
+            crosshairSelectOptions:discord.ui.Select = crosshairSelect.children[0]
+            crosshairSelectOptions.options.clear()
+            for i in len(crosshairs):
+                crosshairSelectOptions.add_option(label="Crosshair 1", value={crosshairs[i]})
+            await interaction.response.edit_message(attachments=[discord.File("crosshairDisplay.png")], view=crosshairSelect)
+        await interaction.response.edit_message(content="Select a crosshair to view")
+        
+class crosshairSelectUI(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+
+    @discord.ui.select(placeholder="Select a crosshair")
+    async def crosshairCallback(self, interaction:discord.Interaction, select:discord.ui.Select):
+        await interaction.response.defer()
+        crosshair = select.values[0]
+        embed = discord.Embed(title="Crosshair", description=f"Crosshair code: {crosshair}")
+        await interaction.followup.send(embed=embed)
 
 class valorant(commands.Cog):
 
-    def __init__(self, bot, matchStats, userAccount):
+    def __init__(self, bot, matchStats, userAccount, authorizationKey):
         self.bot = bot,
         self.matchStats = matchStats, # matchStats is a list of the match data in the format of [matchDetails, playerDetails, teamDetails]
         self.userAccount = userAccount # userAccount is the user's account details from the API
-        self.authorizationKey = settings.VALORANT_KEY # authorizationKey is the API key for the valorant API
+        self.authorizationKey = authorizationKey # authorizationKey is the API key for the valorant API
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -94,7 +127,83 @@ class valorant(commands.Cog):
                             if i != "":
                                 file.write(f" {i},")
         
+    # round parser
+    def roundParser(round:dict):   
+        """
+        Formats round data from the API to track all players in a round.
+        This returns a dictionary with stats for all players in the round and round events.
+        """
+        roundEvents = { 
+            "damage": [], # roundEvents["damage"].append({"attacker": attacker, "victim": victim, "damage": damage})
+            "kills": [], # roundEvents["kills"].append({"killer": killer, "victim": victim, "time": time, "weapon": {"name": weaponName, "display_icon": weaponIcon}, assistants:[assistants]})
+            "assists":[], # roundEvents["assists"].append({"assistant": assistantdisplayuser, "victim": victim})
+        }
+        totalPlayerStats = {} # totalPlayerStats.update({playerName: playerStats})
+        
+
+        for i in round["player_stats"]:
+            playerName = (str(i["player_display_name"]).split("#"))[0]
+            playerStats = {
+                "playerName": playerName, # username#tag
+                "economy": i["economy"], # dictionary
+                "damageEvents": i["damage_events"], # list of dictionaries
+                "killEvents": i["kill_events"],
+                "stats": {"kills": 0, "deaths":0, "assists": 0}
+            }
+
+            #calculate stats
+            stats:dict = playerStats["stats"]
+            stats.update({"kills": len(playerStats["killEvents"])})
+
+            #damage
+            for k in playerStats["damageEvents"]:
+                #print(json.dumps(k, indent=4))
+                damageEvent = {"attacker": playerName, "victim": str(k["receiver_display_name"]).split("#")[0], "damage": k["damage"]}
+                roundEvents["damage"].append(damageEvent)
+
+            #kills
+            for k in playerStats["killEvents"]:
+                #print(json.dumps(k, indent=4))
+                killEvent:dict = {"killer": playerName, "victim": str(k["victim_display_name"]).split("#")[0], "time": k["kill_time_in_round"], "weapon": {"name": k["damage_weapon_name"], "display_icon": k["damage_weapon_assets"]["display_icon"]}, "assistants": []}
+                for j in k["assistants"]:
+                    assistants:list = killEvent["assistants"]
+                    for m in assistants:
+                        assist = {"assistant": m, "victim": str(k["victim_display_name"]).split("#")[0]}
+                        roundEvents["assists"].append(assist)
+                        print(f"Normal assist: {assist}")
+                roundEvents["kills"].append(killEvent)
+
+            totalPlayerStats.update({playerName: playerStats})
+                #assists
+        for k in roundEvents["damage"]:
+            for j in roundEvents["kills"]:
+                #print(json.dumps(j, indent=4))
+                if k["damage"]>49 and k["attacker"] != j["killer"]:
+                    if j["victim"] == k["victim"]:
+                        j["assistants"].append(k["attacker"])
+                        assist = {"assistant": k["attacker"], "victim": k["victim"]}
+                        roundEvents["assists"].append(assist)
+                        print(f"Damage assist: {assist}, {k['damage']}, {j['victim']}, {k['victim']}")
+
+        for i in roundEvents["assists"]:
+            for j in totalPlayerStats:
+                if i["assistant"] == j:
+                    totalPlayerStats[j]["stats"]["assists"] += 1
+                    
+        finalRoundData = {
+            "roundInfo": {"winning_team": round["winning_team"], "end_type": round["end_type"]},
+            "roundEvents": roundEvents, #dictionary - {damage: [], kills: [], assists: []}
+            "playerStats": totalPlayerStats #dictionary - {playerName: playerStats}
+        }
+        return finalRoundData
+
+
+
+
     def getLengthAndHeightOfText(self, text:str, font:str, fontsize:int):
+        """
+        Returns a tuple: width and height of a Pillow ImageDraw.text in pixels.
+        """
         fnt = ImageFont.truetype(font=font, size=fontsize)
         canvas = Image.new('RGB', (1000,1000))
         canvasDraw = ImageDraw.Draw(canvas)
@@ -107,6 +216,73 @@ class valorant(commands.Cog):
         print("bbox:", str(bbox), "width:", str(width), "height:", str(height))
 
         return width, height
+    
+    #SECTION: User crosshairs
+    @app_commands.command(name="add_valorant_crosshair", description="Store your crosshair.")
+    @app_commands.describe(crosshair="Your crosshair profile code")
+    async def addCrosshair(self, interaction:discord.Interaction, crosshair:str):
+        await interaction.response.defer()
+        message = await interaction.original_response()
+
+        if not os.path.exists("riotdetails.json"):
+            return await interaction.followup.send("Run /login_for_valorant before running this command!", ephemeral=True)
+        
+        with open("riotdetails.json", "r") as file:
+            riotdetails = json.load(file)
+            try:
+                crosshairs:list = riotdetails[str(interaction.user.id)]["crosshairs"]
+            except KeyError:
+                crosshairs = []
+            
+            if len(crosshairs) > 5:
+                return await interaction.followup.send("You have reached the maximum amount of crosshairs stored. Please delete one before adding another.", ephemeral=True)
+            
+            for i in crosshairs:
+                if crosshair == i:
+                    return await interaction.followup.send("Crosshair already exists!", ephemeral=True)
+            
+            crosshairs.append(crosshair)
+            userDetails:dict = riotdetails[str(interaction.user.id)]
+            userDetails.update({"crosshairs": crosshairs})
+
+            with open("riotdetails.json", "w") as file:
+                json.dump(riotdetails, file)
+            
+            await interaction.followup.send("Crosshair added!")
+
+    async def createCrosshairImage(crosshairs:list):
+        width = len(crosshairs)*205
+        img = Image.new('RGB', (width, 615), color = (0,0,0))
+        draw = ImageDraw.Draw(img, "RGBA")
+        for i in range(len(crosshairs)):
+            crosshair = crosshairs[i]
+            crosshairImage = requests.get(f"https://api.henrikdev.xyz/valorant/v1/crosshair/{crosshair}", headers={"Authorization": settings.VALORANT_KEY})
+            print(crosshairImage)
+            urllib.request.urlretrieve(f"{crosshairImage}", f"crosshair{i}.png")
+            for k in range(len(os.listdir("images/valorantCrosshairs"))):
+                backgroundImage = os.listdir("images/valorantCrosshairs")[k]
+                crosshairBckg = Image.open(fp=f"images/valorantCrosshairs/{backgroundImage}")
+                crosshairBckg = crosshairBckg.resize([205,205])
+                crosshair = Image.open(f"crosshair{i}.png")
+                crosshair = crosshair.resize([205,205])
+                crosshairBckg.paste(crosshair, (0,0), mask=crosshair)
+
+                img.paste(crosshairBckg, ((i+1)*205,(k+1)*205))
+        
+        img.save("crosshairDisplay.png")
+        
+        
+    def getUserValorantCrosshairs(interactionId:str): 
+        """
+        Returns a list of crosshairs using ``interactionId`` fetched from ``riotdetails.json``. Will return an empty array if nothing is found.
+        """
+        with open("riotdetails.json", "r") as file:
+            riotdetails = json.load(file)
+            try:
+                crosshairs = riotdetails[interactionId]["crosshairs"]
+            except KeyError:
+                crosshairs = []
+        return crosshairs
     
     #SECTION: Get a large widescreen of user stats           
     def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict):
@@ -167,8 +343,8 @@ class valorant(commands.Cog):
         # Draw average stats in the last ten games
         width, height = self.getLengthAndHeightOfText("ADR", "fonts/OpenSans-Regular.ttf", 65)
         for i in range(len(averagedStats)):
-            draw.text([620,550+(i*(height+25))], f"{list(averagedStats.keys())[i]}", font=subfnt, fill=(156, 156, 156))
-            draw.text([700, 550+((i*(height+25))+(height/2))], f"{list(averagedStats.values())[i]}", font=fnt, fill=(255,255,255))
+            draw.text([620,550+(i*75)], f"{list(averagedStats.keys())[i]}", font=subfnt, fill=(156, 156, 156))
+            draw.text([710, 550+(i*75)], f"{list(averagedStats.values())[i]}", font=fnt, fill=(255,255,255))
     
         # Draw the line dividing average stats and match history, then draw match history
         draw.line([(1200, 0), (1200, img.height)], fill=(256,256,256), width=5)
@@ -217,10 +393,6 @@ class valorant(commands.Cog):
             draw.text([1309, 0+(i*91)], f"{game['matchDetails']['map']}\n{game['matchDetails']['playerSidedScore']}", font=matchFnt, fill=(255,255,255))
         
         img.save("valorantAccountStats.png")
-        
-
-
-        
     
     @app_commands.command(name="valorant_account_summary", description="Your total game stats from your past 10 competitive games")
     @app_commands.describe(user="Get user's account stats", riotuser="Get stats from Riot user instead of Discord user. A Riot tag must be provided as well", refresh="Refresh your acccount stats")
@@ -241,7 +413,7 @@ class valorant(commands.Cog):
     
         if riotuser == None:
             if refresh == True:
-                targetAccount = self.refreshLoginForValorantDetails(userId)
+                targetAccount = await self.refreshLoginForValorantDetails(userId)
             else:
                 with open("riotdetails.json", "r") as file:
                         try:
@@ -255,13 +427,13 @@ class valorant(commands.Cog):
             if riottag == None:
                 return await interaction.followup.send("Please provide a riot tag", ephemeral=True)
             
-            targetAccount = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{riotuser}/{riottag}", header={"Authorization": self.authorizationKey})
+            targetAccount = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{riotuser}/{riottag}", headers={"Authorization": self.authorizationKey})
             targetAccount = targetAccount.json()
             
 
-        print("target account:", str(targetAccount))
+        logger.info("target account:", str(targetAccount))
         region = targetAccount["data"]["region"]
-        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{targetAccount['data']['puuid']}?mode=competitive&size=10", header={"Authorization": self.authorizationKey})
+        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{targetAccount['data']['puuid']}?mode=competitive&size=10", headers={"Authorization": self.authorizationKey})
         response = response.json()
         if response["status"] != 200:
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
@@ -275,12 +447,14 @@ class valorant(commands.Cog):
         except TypeError:
             return await interaction.followup.send("Failure! Stats are unfetchable.", ephemeral=True)
 
-        self.createValorantAccountImage(targetAccount, matchStats, averagedStats, gameStats, otherStats)
+        try:
+            self.createValorantAccountImage(targetAccount, matchStats, averagedStats, gameStats, otherStats)   
+        except Exception as e:
+            logger.info("Error getting summary: ", str(e))
+            return await interaction.followup.send("Failure! Stats are unfetchable.", ephemeral=True) 
 
-        await interaction.followup.send(file=discord.File("valorantAccountStats.png"))
+        await interaction.followup.send(file=discord.File("valorantAccountStats.png"), view=accountSummaryUI())
         os.remove("valorantAccountStats.png")
-
-
 
 
     #SECTION: Get user stats from match history. Provide avereage stats, match history stats and other stats (most played agent, etc.)
@@ -383,7 +557,6 @@ class valorant(commands.Cog):
 
         # function for sorting mostPlayedAgent
         def sortLowestToHighest(arr:list):
-            length = len(arr)
             print(arr)
             try:
                 for i in arr:
@@ -503,9 +676,9 @@ class valorant(commands.Cog):
         logger.info(f"Getting games for {userAccount['data']['name']}")        
         region = userAccount['data']['region']
         if mode == None:
-            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?size={amount}", header={"Authorization": self.authorizationKey})
+            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?size={amount}", headers={"Authorization": self.authorizationKey})
         else:
-            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?mode={mode.value}&size={amount}", header={"Authorization": self.authorizationKey})
+            response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{userAccount['data']['puuid']}?mode={mode.value}&size={amount}", headers={"Authorization": self.authorizationKey})
         response = response.json()
 
 
@@ -561,14 +734,6 @@ class valorant(commands.Cog):
             matchDetails = response[0]
             playerDetails = response[1]
             teamDetails = response[2]
-        
-            # for i in range(len(response)):
-            #     print(i)
-            #     with open ("matchdetails.json", "a+") as file:
-            #         json.dump(response[i], file, indent=4)
-
-            with open("matchdetails.json", "w") as file:
-                json.dump(response[0], file, indent=4)
 
         
         totalRoundsPlayed = teamDetails["red"]["rounds_won"] + teamDetails["blue"]["rounds_won"]
@@ -790,8 +955,11 @@ class valorant(commands.Cog):
                 continue
 
 
-    # Personal stats in a single match. Parameters are the map name, the agent picture link, user stats and the score in the format of {"Red": 0, "Blue": 0}
+    
     def createUserStatsImage(map:str, agentPfp:str, userStats:dict, score:dict, messageId, username):
+        """
+        Personal stats in a single match. Parameters are the map name, the agent picture link, user stats and the score in the format of {"Red": 0, "Blue": 0}
+        """
         mapLoadScreens = {
             "Ascent": "https://static.wikia.nocookie.net/valorant/images/e/e7/Loading_Screen_Ascent.png/revision/latest?cb=20200607180020",
             "Breeze": "https://static.wikia.nocookie.net/valorant/images/1/10/Loading_Screen_Breeze.png/revision/latest",
@@ -891,7 +1059,7 @@ class valorant(commands.Cog):
             "size": 1
         }
         region = userAccount["data"]["region"]
-        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{fetchParameters['puuid']}?mode={fetchParameters['mode']}&size={fetchParameters['size']}", header={"Authorization": self.authorizationKey})
+        response = requests.get(url=f"{URL}/valorant/v3/by-puuid/matches/{region}/{fetchParameters['puuid']}?mode={fetchParameters['mode']}&size={fetchParameters['size']}", headers={"Authorization": self.authorizationKey})
         response = response.json()
 
         if(response["status"] != 200):
@@ -910,7 +1078,12 @@ class valorant(commands.Cog):
         with open("recentGames.txt", "a+") as file:
             file.write(f" {message},")
 
-    async def refreshLoginForValorantDetails(self, interactionId:str): # Returns either an error string or the user's details as well as updating in the json file
+    async def refreshLoginForValorantDetails(self, interactionId:str): 
+        """
+        Updates ``riotdetails.json`` with refreshed stats fetched from API. \n
+        Returns the response or an error string.
+        """
+
         if not os.path.exists("riotdetails.json"):
             return "User has not logged in yet! They must run /login_for_valorant before trying this command"
     
@@ -919,21 +1092,29 @@ class valorant(commands.Cog):
             if str(interactionId) not in riotDetails:
                 return "User has not logged in yet! They must run /login_for_valorant before trying this command"
             else:
-                userAccount = riotDetails[str(interactionId)]
+                userAccount:dict = riotDetails[str(interactionId)]
+                try:
+                    crosshairs = userAccount["crosshairs"]
+                except:
+                    userAccount.update({"crosshairs": []})
         
-            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{userAccount['data']['name']}/{userAccount['data']['tag']}", header={"Authorization": self.authorizationKey})
-            response.json()
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{userAccount['data']['name']}/{userAccount['data']['tag']}", headers={"Authorization": self.authorizationKey})
+            response = response.json()
 
             if(response["status"] != 200):
                 return f"Error with the status of {response['status']}"
 
+            response.update({"crosshair": crosshairs})
             riotDetails.update({str(interactionId): response})
 
             with open("riotdetails.json", "w") as writeFile:
                 json.dump(riotDetails, writeFile)
                 return riotDetails[str(interactionId)]
     
-    async def loginForValorant(self, interactionId:str, username:str, tag:str): # This function logs in user by assinging riot account details with their discord id
+    async def loginForValorant(self, interactionId:str, username:str, tag:str): 
+        """
+        Logs in user by assinging riot account details with their Discord user ID to ``riotdetails.json``. Also remembers crosshairs saved to specific user ID.
+        """
         if(username == None):
             with open("riotdetails.json", "r") as file:
                 riotDetails = json.load(file)
@@ -943,39 +1124,37 @@ class valorant(commands.Cog):
             
             return f"Deleting {interactionId}'s details"
         
-        
         if("#" in str(tag)):
             tag = tag.replace("#", "")
-        
-        fetchRequests = {
-            "name": username,
-            "tag": str(tag)
-        }
 
-        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{fetchRequests['name']}/{fetchRequests['tag']}", header={"Authorization": self.authorizationKey})
-        response = response.json()
-
-        print("\n"+str(response)+"\n")
+        response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{username}/{str(tag)}", headers={"Authorization": self.authorizationKey})
+        response:dict = response.json()
 
         if(response["status"] != 200):
             return f"Invalid Riot ID or Tag with the error of {response['status']}"
 
         riotDetails = {}
-        try:
-        #opens the file and reads the json
+        if os.path.exists("riotdetails.json"):
+            #opens the file and reads the json
             with open ("riotdetails.json", "r") as file:
-                riotDetails = json.load(file)
+                riotDetails:dict = json.load(file)
+                try:
+                    userAccount = riotDetails[str(interactionId)]
+                    print(str(userAccount))
+                    crosshairs = userAccount["crosshairs"]
+                    response.update({"crosshairs": crosshairs})
+                except KeyError:
+                    response.update({"crosshair": []})
                 riotDetails.update({str(interactionId): response})
                 with open ("riotdetails.json", "w") as file:
                     json.dump(riotDetails, file)
-                    
             return "Updated details!"
-        except Exception as e:
-            with open ("riotdetails.json", "w+") as file:
+        else:
+            with open("riotdetails.json", "w") as file:
+                response.update({"crosshair": []})
                 riotDetails.update({str(interactionId): response})
                 json.dump(riotDetails, file)
-        
-            return "Updated details!"
+            return "Updatged details!"
         
     @app_commands.command(name="login_for_valorant", description="Login into your account")
     @app_commands.describe(username = "Enter your Valorant username. If you leave it empty, it will delete your information.")
@@ -1021,7 +1200,7 @@ class valorant(commands.Cog):
         await interaction.response.defer()
         team = {}
 
-        response = requests.get(url="https://api.henrikdev.xyz/valorant/v1/premier/search?name=GCGSval&tag=GCVT", header={"Authorization": self.authorizationKey})
+        response = requests.get(url="https://api.henrikdev.xyz/valorant/v1/premier/search?name=GCGSval&tag=GCVT", headers={"Authorization": self.authorizationKey})
         response = response.json()
 
         if(response["status"] != 200):
@@ -1040,9 +1219,9 @@ class valorant(commands.Cog):
         await interaction.response.defer()
         team = {}
         if tag != None:
-            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}", header={"Authorization": self.authorizationKey})
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}", headers={"Authorization": self.authorizationKey})
         else:
-            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}&tag={tag}", header={"Authorization": self.authorizationKey})
+            response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/premier/search?name={team_name}&tag={tag}", headers={"Authorization": self.authorizationKey})
 
         response = response.json()
 
@@ -1065,4 +1244,4 @@ class valorant(commands.Cog):
             await interaction.followup.send(f"{team_name} not found")
 
 async def setup(bot):
-    await bot.add_cog(valorant(bot, None, None))
+    await bot.add_cog(valorant(bot, None, None, settings.VALORANT_KEY))

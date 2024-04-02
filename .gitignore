@@ -163,6 +163,9 @@ cython_debug/
 
 *.db
 
+# Valorant
 /riotdetails.json
-/matchdetails.json
+/crosshairs.json
 /recentGames.txt
+
+/steamdetails.json
