@@ -3,8 +3,10 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from discord import ui
+
 import json
 import requests
+from io import BytesIO
 
 from asyncio import sleep
 
@@ -96,13 +98,14 @@ class accountSummaryUI(discord.ui.View):
             pass
         else:
             await valorant.createCrosshairImage(crosshairs)
+
             crosshairSelect = crosshairSelectUI()
             crosshairSelectOptions:discord.ui.Select = crosshairSelect.children[0]
             crosshairSelectOptions.options.clear()
-            for i in len(crosshairs):
-                crosshairSelectOptions.add_option(label="Crosshair 1", value={crosshairs[i]})
-            await interaction.response.edit_message(attachments=[discord.File("crosshairDisplay.png")], view=crosshairSelect)
-        await interaction.response.edit_message(content="Select a crosshair to view")
+            for i in range(len(crosshairs)):
+                crosshairSelectOptions.add_option(label=f"Crosshair {i+1}", value=f"{crosshairs[i]}")
+            await interaction.response.edit_message(attachments=[discord.File(f"{interaction.user.id}crosshairDisplay.png")], view=crosshairSelect)
+            os.remove(f"{interaction.user.id}crosshairDisplay.png")
         
 class crosshairSelectUI(discord.ui.View):
     def __init__(self):
@@ -112,7 +115,7 @@ class crosshairSelectUI(discord.ui.View):
     async def crosshairCallback(self, interaction:discord.Interaction, select:discord.ui.Select):
         await interaction.response.defer()
         crosshair = select.values[0]
-        embed = discord.Embed(title="Crosshair", description=f"Crosshair code: {crosshair}")
+        embed = discord.Embed(title="Crosshair", description=f"{crosshair}")
         await interaction.followup.send(embed=embed)
 
 class valorant(commands.Cog):
@@ -240,7 +243,7 @@ class valorant(commands.Cog):
         width = bbox[2] - bbox[0]
         height = bbox[3] - bbox[1]
 
-        print("bbox:", str(bbox), "width:", str(width), "height:", str(height))
+        #print("bbox:", str(bbox), "width:", str(width), "height:", str(height))
 
         return width, height
     
@@ -277,26 +280,35 @@ class valorant(commands.Cog):
             
             await interaction.followup.send("Crosshair added!")
 
-    async def createCrosshairImage(crosshairs:list):
+    async def createCrosshairImage(crosshairs:list, userId):
         width = len(crosshairs)*205
         img = Image.new('RGB', (width, 615), color = (0,0,0))
         draw = ImageDraw.Draw(img, "RGBA")
         for i in range(len(crosshairs)):
             crosshair = crosshairs[i]
-            crosshairImage = requests.get(f"https://api.henrikdev.xyz/valorant/v1/crosshair/{crosshair}", headers={"Authorization": settings.VALORANT_KEY})
-            print(crosshairImage)
-            urllib.request.urlretrieve(f"{crosshairImage}", f"crosshair{i}.png")
-            for k in range(len(os.listdir("images/valorantCrosshairs"))):
-                backgroundImage = os.listdir("images/valorantCrosshairs")[k]
-                crosshairBckg = Image.open(fp=f"images/valorantCrosshairs/{backgroundImage}")
-                crosshairBckg = crosshairBckg.resize([205,205])
-                crosshair = Image.open(f"crosshair{i}.png")
-                crosshair = crosshair.resize([205,205])
-                crosshairBckg.paste(crosshair, (0,0), mask=crosshair)
+            print("crosshair:", crosshair)
+            crosshairImage = requests.get(f"https://api.henrikdev.xyz/valorant/v1/crosshair/generate?id={crosshair}", headers={"Authorization": settings.VALORANT_KEY, "Accept": "image/png"}, stream=True)
+            # print("raw", str(crosshairImage.raw), "content", str(crosshairImage.content))
+            # crosshairImage = BytesIO(crosshairImage.content)
+            # crosshairImage = crosshairImage.read()
+            crosshairImage = Image.open(crosshairImage.raw)
+            crosshairImage.save(f"crosshair{i}.png")
 
-                img.paste(crosshairBckg, ((i+1)*205,(k+1)*205))
+            for k in range(len(os.listdir("images/valorantCrosshairBckg"))):
+                backgroundImage = os.listdir("images/valorantCrosshairBckg")[k]
+                print(f"crosshair {i+1}, background: {backgroundImage}")
+                crosshairBckg = Image.open(fp=f"images/valorantCrosshairBckg/{backgroundImage}")
+                crosshairBckg = crosshairBckg.resize([205,205])
+
+                crosshairImage = Image.open(f"crosshair{i}.png")
+                crosshairImage = crosshairImage.resize([205,205])
+                crosshairBckg.paste(crosshairImage, (0,0), mask=crosshairImage)
+                os.remove(f"crosshair{i}.png")
+
+                img.paste(crosshairBckg, ((i)*205,(k)*205))
+                print(f"Pasting crosshair {i+1} at {(i)*205}, {(k)*205}")
         
-        img.save("crosshairDisplay.png")
+        img.save(f"{userId}crosshairDisplay.png")
         
         
     def getUserValorantCrosshairs(interactionId:str): 
@@ -312,7 +324,7 @@ class valorant(commands.Cog):
         return crosshairs
     
     #SECTION: Get a large widescreen of user stats           
-    def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict):
+    def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict, userId:str):
 
         img = Image.new('RGBA', (1920, 910), color = (6, 9, 23))
         draw = ImageDraw.Draw(img, "RGBA")
@@ -419,7 +431,7 @@ class valorant(commands.Cog):
 
             draw.text([1309, 0+(i*91)], f"{game['matchDetails']['map']}\n{game['matchDetails']['playerSidedScore']}", font=matchFnt, fill=(255,255,255))
         
-        img.save("valorantAccountStats.png")
+        img.save(f"{userId}valorantAccountStats.png")
     
     @app_commands.command(name="valorant_account_summary", description="Your total game stats from your past 10 competitive games")
     @app_commands.describe(user="Get user's account stats", riotuser="Get stats from Riot user instead of Discord user. A Riot tag must be provided as well", refresh="Refresh your acccount stats")
@@ -445,7 +457,7 @@ class valorant(commands.Cog):
                 with open("riotdetails.json", "r") as file:
                         try:
                             riotDetails = json.load(file)
-                            print(userId)
+                            #print(userId)
                             targetAccount = riotDetails[userId]
                         except Exception as e:
                             print(e)
@@ -457,8 +469,6 @@ class valorant(commands.Cog):
             targetAccount = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{riotuser}/{riottag}", headers={"Authorization": self.authorizationKey})
             targetAccount = targetAccount.json()
             
-
-        logger.info("target account:", str(targetAccount))
         region = targetAccount["data"]["region"]
         response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v3/by-puuid/matches/{region}/{targetAccount['data']['puuid']}?mode=competitive&size=10", headers={"Authorization": self.authorizationKey})
         response = response.json()
@@ -475,13 +485,20 @@ class valorant(commands.Cog):
             return await interaction.followup.send("Failure! Stats are unfetchable.", ephemeral=True)
 
         try:
-            self.createValorantAccountImage(targetAccount, matchStats, averagedStats, gameStats, otherStats)   
+            self.createValorantAccountImage(targetAccount, matchStats, averagedStats, gameStats, otherStats, interaction.user.id)   
         except Exception as e:
             logger.info("Error getting summary: ", str(e))
             return await interaction.followup.send("Failure! Stats are unfetchable.", ephemeral=True) 
 
-        await interaction.followup.send(file=discord.File("valorantAccountStats.png"), view=accountSummaryUI())
-        os.remove("valorantAccountStats.png")
+        viewAccountSummary = accountSummaryUI()
+        try:
+            if targetAccount["crosshairs"] == []:
+                viewAccountSummary.children[0].disabled = True
+        except KeyError:
+            viewAccountSummary.children[0].disabled = True
+        
+        await interaction.followup.send(file=discord.File(f"{interaction.user.id}valorantAccountStats.png"), view=viewAccountSummary)
+        os.remove(f"{interaction.user.id}valorantAccountStats.png")
 
 
     #SECTION: Get user stats from match history. Provide avereage stats, match history stats and other stats (most played agent, etc.)
@@ -587,14 +604,14 @@ class valorant(commands.Cog):
 
         # function for sorting mostPlayedAgent
         def sortLowestToHighest(arr:list):
-            print(arr)
+            #print(arr)
             try:
                 for i in arr:
                     for j in arr:
                         iagentName = list(i.keys())[0]
                         jagentName = list(j.keys())[0]
 
-                        print(f"{iagentName}:{i[iagentName]['timesPlayed']}, {jagentName}:{j[jagentName]['timesPlayed']}")
+                        #print(f"{iagentName}:{i[iagentName]['timesPlayed']}, {jagentName}:{j[jagentName]['timesPlayed']}")
                         if i[iagentName]['timesPlayed'] > j[jagentName]['timesPlayed']:
                             arr[arr.index(i)], arr[arr.index(j)] = arr[arr.index(j)], arr[arr.index(i)]
                 
@@ -636,7 +653,7 @@ class valorant(commands.Cog):
                 "HS": f'{round((requestedUser["stats"]["headshots"]/(requestedUser["stats"]["bodyshots"]+requestedUser["stats"]["headshots"]+requestedUser["stats"]["legshots"])*100),2)}%', #string because of % sign
                 "agentPfp": requestedUser["assets"]["agent"]["small"] #string
             })
-            print(gameStats[l])
+            #print(gameStats[l])
             try:
                 mostPlayedAgent.update({requestedUser["character"]: {"timesPlayed": mostPlayedAgent[requestedUser["character"]]["timesPlayed"] + 1, "agentPfp": requestedUser["assets"]["agent"]["small"], "agentName": requestedUser["character"]}})
             except KeyError:
@@ -652,7 +669,7 @@ class valorant(commands.Cog):
             matchStats.append([matchDetails, playerDetails, teamDetails])
         
         for i in mostPlayedAgent:
-            print("appending", i, mostPlayedAgent[i])
+            #print("appending", i, mostPlayedAgent[i])
             mostPlayedAgentArr.append({i: mostPlayedAgent[i]}) # appends {agent name: {timesPlayed: count, agentPfp: url}}
 
         # Sorts the most played agent by the amount of times played. This function returns an array of the most played agents in order of most played to least played.
@@ -754,7 +771,7 @@ class valorant(commands.Cog):
         Formats the match data into an image. Response must be provided as a ``list`` or a ``dict``, and should contain details of the match. If puuid is None, it will use the global variable puuid.
         """
         finalGameStats = {}
-        print(type(response))
+        #print(type(response))
         #assigns details from response JSON file acquired from match only if it's a response directly from the API.
         if type(response) == dict:
             matchDetails = response["data"][0]["metadata"]
@@ -1282,7 +1299,7 @@ class valorant(commands.Cog):
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
         
 
-        print(json.dumps(response, indent=4))
+        #print(json.dumps(response, indent=4))
         for i in response["data"]:
             try:
                 if str(i["name"]).lower() == team_name.lower():
