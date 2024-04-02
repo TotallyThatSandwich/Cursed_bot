@@ -40,6 +40,28 @@ class matchStatsUI(discord.ui.View):
                 i.disabled = False
         await interaction.response.edit_message(attachments=[discord.File(f"userStats{interaction.message.id}.png")], delete_after=600, view=self)
         
+class roundViewUI(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+
+    @discord.ui.button(label="Return", style=discord.ButtonStyle.blurple, custom_id="return")
+    async def returnToMatchStats(self, interaction:discord.Interaction, button:discord.ui.Button):
+        await interaction.response.edit_message(attachments=[discord.File(f"userStats{interaction.message.id}.png")], view=matchStatsUI())
+    
+    @discord.ui.button(label="Next round", style=discord.ButtonStyle.blurple, custom_id="next")
+    async def nextRound(self, interaction:discord.Interaction, button:discord.ui.Button):
+        await interaction.response.edit_message(content="Next round", view=self)
+    
+    @discord.ui.button(label="Previous round", style=discord.ButtonStyle.blurple, custom_id="previous")
+    async def previousRound(self, interaction:discord.Interaction, button:discord.ui.Button):
+        await interaction.response.edit_message(content="Previous round", view=self)
+
+    @discord.ui.select(placeholder="Select a round")
+    async def roundSelect(self, interaction:discord.Interaction, select:discord.ui.Select):
+        await interaction.response.defer()
+        roundStats = valorant.roundParser(select.values[0])
+        valorant.formatRoundEmbed(interaction.message.id, roundStats)
+        await interaction.followup.edit_message(interaction.message.id, attachments=[discord.File(f"roundStats{interaction.message.id}.png")], view=roundViewUI())
 
 class selectMatchUI(discord.ui.View):
     def __init__(self, options=None):
@@ -137,6 +159,7 @@ class valorant(commands.Cog):
             "damage": [], # roundEvents["damage"].append({"attacker": attacker, "victim": victim, "damage": damage})
             "kills": [], # roundEvents["kills"].append({"killer": killer, "victim": victim, "time": time, "weapon": {"name": weaponName, "display_icon": weaponIcon}, assistants:[assistants]})
             "assists":[], # roundEvents["assists"].append({"assistant": assistantdisplayuser, "victim": victim})
+            "other": []
         }
         totalPlayerStats = {} # totalPlayerStats.update({playerName: playerStats})
         
@@ -189,9 +212,13 @@ class valorant(commands.Cog):
             for j in totalPlayerStats:
                 if i["assistant"] == j:
                     totalPlayerStats[j]["stats"]["assists"] += 1
+        
+        if round["bomb_planted"] == True:
+            roundEvents["other"].append({"plant": {"time": round["plant_events"]["plant_time_in_round"], "planter": str(round["plant_events"]["planted_by"]["display_name"]).split("#")[0]}})
+            attackingTeam = round["plant_events"]["planted_by"]["team"]
                     
         finalRoundData = {
-            "roundInfo": {"winning_team": round["winning_team"], "end_type": round["end_type"]},
+            "roundInfo": {"winning_team": round["winning_team"], "end_type": round["end_type"], "attacking_team" : attackingTeam},
             "roundEvents": roundEvents, #dictionary - {damage: [], kills: [], assists: []}
             "playerStats": totalPlayerStats #dictionary - {playerName: playerStats}
         }
@@ -543,6 +570,9 @@ class valorant(commands.Cog):
             img.save(f"userCollectedStats{image}.png")
     
     async def calculateUserStatsFromGames(self, response, user): # Returns [matchStats, averagedStats, gameStats, otherStats] or an error
+        """
+        Parses the user's stats from API (response) and returns dictionary ``{matchStats: [], averagedStats: {"ADR": float, "ACS": float, "KDR":float, "HS":string}, gameStats: [], otherStats: {}}``, or a string error message.
+        """
         gameStats = [] # specific player stats of a game. contains all the game stats in the format of {"matchDetails": {"map": map, "playerSidedScore": "Red - Blue", "mode": mode}, "kills": kills, "deaths": deaths, "assists": assists, "KDA": "kills/deaths/assists", "KDR": kills/deaths, "ACS": ACS, "ADR": ADR, "DD": DD, "rank": rank, "team": team, "HS": HS, "agentPfp": agentPfp}
         averagedStats = {"ADR": 0, "ACS": 0, "KDR": 0, "HS": 0}
 
@@ -646,8 +676,6 @@ class valorant(commands.Cog):
 
         return {"matchStats": matchStats, "averagedStats": averagedStats, "gameStats": gameStats, "otherStats": otherStats}
 
-
-
     @app_commands.command(name="get_valorant_stats", description="Get your valorant stats")
     @app_commands.choices(mode=[app_commands.Choice(name="Competitive", value="competitive"), app_commands.Choice(name="Unrated", value="unrated"), app_commands.Choice(name="Premier", value="premier")])
     @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 10.", mode = "Mode of the games to get.")
@@ -721,8 +749,10 @@ class valorant(commands.Cog):
 
     #SECTION: Create stat images from match data
     # Function for formatting images from match data. Use this to create the images for the match data, not the other functions.
-    def formatMatchEmbed(messageid, response=None, puuid=None):       
-
+    def formatMatchEmbed(messageid, response, puuid=None):       
+        """
+        Formats the match data into an image. Response must be provided as a ``list`` or a ``dict``, and should contain details of the match. If puuid is None, it will use the global variable puuid.
+        """
         finalGameStats = {}
         print(type(response))
         #assigns details from response JSON file acquired from match only if it's a response directly from the API.
@@ -769,6 +799,29 @@ class valorant(commands.Cog):
         valorant.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid,username=requestedUser["name"])
         valorant.createTotalGameStatsImage(matchDetails["map"], finalGameStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid)
     
+    def createRoundImage(rounds:list):
+        """
+        Creates an image for the round data. Must provide the round data as a list.
+        """
+        img = Image.new('RGB', (800, 1200), color = (6, 9, 23))
+        draw = ImageDraw.Draw(img)
+
+        fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=17)
+        boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=80)
+
+        def sortEvents(arr):
+            length = len(arr)
+            for i in range(length):
+                for j in range(0, length):
+                    if arr[i]["round"] < arr[j]["round"]:
+                        arr[i], arr[j] = arr[j], arr[i]
+            return arr
+
+        for i in range(len(round)):
+            draw.text([10, 10+(i*100)], f"{round[i]}", font=fnt, fill=(255,255,255))
+        
+        img.save("round.png")
+
     # Function for creating the image for all players in a match data.
     def createTotalGameStatsImage(map:str, stats:dict, score:dict, messageId):
         mapLoadScreens = {
