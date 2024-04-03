@@ -122,8 +122,12 @@ class manageCrosshairUI(discord.ui.View):
             with open("riotdetails.json", "r") as file:
                 riotdetails = json.load(file)
                 crosshairs:list = riotdetails[str(interaction.user.id)]["crosshairs"]
-                crosshairs.remove(self.crosshair)
-
+                print(interaction.user.id)
+                try:
+                    crosshairs.remove(self.crosshair)
+                except:
+                    return await interaction.response.send_message(content="You cannot delete someone else's crosshair!", ephemeral=True)
+                
                 with open("riotdetails.json", "w") as writeFile:
                     json.dump(riotdetails, writeFile)
             return await interaction.response.send_message(content="Crosshair deleted!", ephemeral=True)
@@ -332,11 +336,12 @@ class valorant(commands.Cog):
                 crosshairImage = Image.open(f"crosshair{i}.png")
                 crosshairImage = crosshairImage.resize([205,205])
                 crosshairBckg.paste(crosshairImage, (0,0), mask=crosshairImage)
-                crosshairImage.save(f"crosshair{i}.png")
+                
 
                 img.paste(crosshairBckg, ((i)*205,(k)*205))
                 print(f"Pasting crosshair {i+1} at {(i)*205}, {(k)*205}")
-        
+                
+            os.remove(f"crosshair{i}.png")
         img.save(f"{userId}crosshairDisplay.png")
         
         
