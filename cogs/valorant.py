@@ -97,8 +97,10 @@ class accountSummaryUI(discord.ui.View):
         if crosshairs == []:
             pass
         else:
-            await valorant.createCrosshairImage(crosshairs)
-
+            try:
+                await valorant.createCrosshairImage(crosshairs, interaction.user.id)
+            except FileNotFoundError as e:
+                print(e)
             crosshairSelect = crosshairSelectUI()
             crosshairSelectOptions:discord.ui.Select = crosshairSelect.children[0]
             crosshairSelectOptions.options.clear()
@@ -107,6 +109,33 @@ class accountSummaryUI(discord.ui.View):
             await interaction.response.edit_message(attachments=[discord.File(f"{interaction.user.id}crosshairDisplay.png")], view=crosshairSelect)
             os.remove(f"{interaction.user.id}crosshairDisplay.png")
         
+
+
+class manageCrosshairUI(discord.ui.View):
+    def __init__(self, crosshair:str):
+        super().__init__(),
+        self.crosshair = crosshair
+
+    @discord.ui.button(label="Delete crosshair", style=discord.ButtonStyle.red, custom_id="deleteCrosshair")
+    async def deleteCrosshair(self, interaction:discord.Interaction, button:discord.ui.Button):
+        try:
+            with open("riotdetails.json", "r") as file:
+                riotdetails = json.load(file)
+                crosshairs:list = riotdetails[str(interaction.user.id)]["crosshairs"]
+                print(interaction.user.id)
+                try:
+                    crosshairs.remove(self.crosshair)
+                except:
+                    return await interaction.response.send_message(content="You cannot delete someone else's crosshair!", ephemeral=True)
+                
+                with open("riotdetails.json", "w") as writeFile:
+                    json.dump(riotdetails, writeFile)
+            return await interaction.response.send_message(content="Crosshair deleted!", ephemeral=True)
+        except KeyError as e:
+            logger.info("Error deleting crosshair: ", str(e))
+            return await interaction.response.send_message(content="Error", ephemeral=True)
+        
+
 class crosshairSelectUI(discord.ui.View):
     def __init__(self):
         super().__init__()
@@ -116,7 +145,12 @@ class crosshairSelectUI(discord.ui.View):
         await interaction.response.defer()
         crosshair = select.values[0]
         embed = discord.Embed(title="Crosshair", description=f"{crosshair}")
-        await interaction.followup.send(embed=embed)
+
+        viewManageCrosshairUI = manageCrosshairUI(str(crosshair))
+
+        await interaction.followup.send(embed=embed, view=viewManageCrosshairUI)
+
+
 
 class valorant(commands.Cog):
 
@@ -285,12 +319,11 @@ class valorant(commands.Cog):
         img = Image.new('RGB', (width, 615), color = (0,0,0))
         draw = ImageDraw.Draw(img, "RGBA")
         for i in range(len(crosshairs)):
-            crosshair = crosshairs[i]
-            print("crosshair:", crosshair)
-            crosshairImage = requests.get(f"https://api.henrikdev.xyz/valorant/v1/crosshair/generate?id={crosshair}", headers={"Authorization": settings.VALORANT_KEY, "Accept": "image/png"}, stream=True)
-            # print("raw", str(crosshairImage.raw), "content", str(crosshairImage.content))
-            # crosshairImage = BytesIO(crosshairImage.content)
-            # crosshairImage = crosshairImage.read()
+            crosshair:str = crosshairs[i]
+            crosshair = crosshair.replace(";", "%3B")
+            print(crosshair)
+            crosshairImage = requests.get(f"https://api.henrikdev.xyz/valorant/v1/crosshair/generate?id={crosshair}", headers={"Authorization": settings.VALORANT_KEY, "accept": "image/png"}, stream=True)
+            print(crosshairImage.raw)
             crosshairImage = Image.open(crosshairImage.raw)
             crosshairImage.save(f"crosshair{i}.png")
 
@@ -303,11 +336,12 @@ class valorant(commands.Cog):
                 crosshairImage = Image.open(f"crosshair{i}.png")
                 crosshairImage = crosshairImage.resize([205,205])
                 crosshairBckg.paste(crosshairImage, (0,0), mask=crosshairImage)
-                os.remove(f"crosshair{i}.png")
+                
 
                 img.paste(crosshairBckg, ((i)*205,(k)*205))
                 print(f"Pasting crosshair {i+1} at {(i)*205}, {(k)*205}")
-        
+                
+            os.remove(f"crosshair{i}.png")
         img.save(f"{userId}crosshairDisplay.png")
         
         
@@ -325,7 +359,9 @@ class valorant(commands.Cog):
     
     #SECTION: Get a large widescreen of user stats           
     def createValorantAccountImage(self, accountInfo:dict, matchStats:dict, averagedStats:dict,gameStats:dict, otherStats:dict, userId:str):
-
+        """
+        Function that creates the account summary image. To be used with ``getUserAccount()``, which acquires match details from ``calculateUserStatsFromGames()``.
+        """
         img = Image.new('RGBA', (1920, 910), color = (6, 9, 23))
         draw = ImageDraw.Draw(img, "RGBA")
 

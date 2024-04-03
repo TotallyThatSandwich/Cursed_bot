@@ -94,15 +94,16 @@ class genericAI(commands.Cog):
                 return await message.channel.send(response)
         
         # checks if someone is replying to the bot, then check if it is replying to bot or random message.
-        if "reply" in str(message.type):
+        if "reply" in str(message.type): #1210512184103403530
             repliedMessage = await message.channel.fetch_message(message.reference.message_id)
+            print("\nreplied message: ", str(repliedMessage.content), "\noriginal message: ", (repliedMessage.author.id), "\nmessage author:", message.author.id)
 
             if str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530":
-                if not(message.author.id == "1210389365185056818" or message.author.id == "1210512184103403530"):
+                if str(message.author.id) != "1210389365185056818" and str(message.author.id) != "1210512184103403530":
                     response = await formatResponse(botQuery)
                     return await message.channel.send(response)
-            elif not("1210389365185056818" in str(repliedMessage.content) or "1210512184103403530" in str(repliedMessage.content) or repliedMessage.author.id == message.author.id):
-                with open("blacklist.txt", "r") as blacklist: #1210389365185056818
+            elif "1210389365185056818" not in str(repliedMessage.content) or "1210512184103403530" not in str(repliedMessage.content) or repliedMessage.author.id == message.author.id:
+                with open("blacklist.txt", "r") as blacklist: #1210512184103403530
                     blacklist = blacklist.readlines()
                     for i in blacklist:
                         if i == message.author.id:
