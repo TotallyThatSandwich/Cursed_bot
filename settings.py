@@ -13,7 +13,7 @@ GCYTC = os.getenv("GCYTC")
 DEV = os.getenv("DEV")
 GITHUB_REPO_URL = os.environ.get("GITHUB_REPO_URL")
 GITHUB_PAT = os.environ.get("GITHUB_PAT")
-VALORANT_API = os.environ.get("VALORANT_API")
+VALORANT_KEY = os.environ.get("VALORANT_KEY")
 STEAM_KEY = os.environ.get("STEAM_KEY")
 
 LOGGING_CONFIG = {
