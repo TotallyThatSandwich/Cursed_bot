@@ -41,6 +41,10 @@ class matchStatsUI(discord.ui.View):
             else:
                 i.disabled = False
         await interaction.response.edit_message(attachments=[discord.File(f"userStats{interaction.message.id}.png")], delete_after=600, view=self)
+    
+    @discord.ui.button(label="Round display", style=discord.ButtonStyle.blurple, custom_id="roundswap")
+    async def swapToRoundDisplay(self, interaction:discord.Interaction, button:discord.ui.Button):
+        await interaction.response.edit_message(attachments=[discord.File(f"roundSummary{interaction.message.id}.png")], view=roundViewUI())
         
 class roundViewUI(discord.ui.View):
     def __init__(self):
@@ -166,7 +170,6 @@ class valorant(commands.Cog):
         }
         totalPlayerStats = {} # totalPlayerStats.update({playerName: playerStats})
         
-
         for i in round["player_stats"]:
             playerName = (str(i["player_display_name"]).split("#"))[0]
             playerStats = {
@@ -226,9 +229,6 @@ class valorant(commands.Cog):
             "playerStats": totalPlayerStats #dictionary - {playerName: playerStats}
         }
         return finalRoundData
-
-
-
 
     def getLengthAndHeightOfText(self, text:str, font:str, fontsize:int):
         """
@@ -335,12 +335,12 @@ class valorant(commands.Cog):
 
         username = accountInfo['data']['name']
 
-        if len(username) <6:
+        if len(username) <8:
             boldFntSize = 100
             boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100)
         else:
-            boldFntSize = 100-((len(username)-6)*15)
-            boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100-((len(username)-6)*15))
+            boldFntSize = 100-((len(username)-8)*10)
+            boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=100-((len(username)-8)*10))
 
         #Most played agent image
         agentName = otherStats["mostPlayedAgent"]["agentName"]
@@ -503,6 +503,9 @@ class valorant(commands.Cog):
 
     #SECTION: Get user stats from match history. Provide avereage stats, match history stats and other stats (most played agent, etc.)
     async def createStatsImage(self, averageStats:dict, gameStats:dict, otherStats:dict):
+        """
+        Creates an image of the user's stats throughout their match history. Should be used in junction with ``calculateUserStatsFromGames()``.
+        """
         imagesRequired = math.ceil(len(gameStats)/5)
         #print("images required:", imagesRequired)
         for image in range(imagesRequired):
@@ -697,6 +700,9 @@ class valorant(commands.Cog):
     @app_commands.choices(mode=[app_commands.Choice(name="Competitive", value="competitive"), app_commands.Choice(name="Unrated", value="unrated"), app_commands.Choice(name="Premier", value="premier")])
     @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 10.", mode = "Mode of the games to get.")
     async def getGames(self, interaction:discord.Interaction, user:discord.Member=None, amount:int=5, mode:app_commands.Choice[str]=None):
+        """
+        Grab user's match history from the API, creates an image with it and sends it to the user.
+        """
         await interaction.response.defer()
         message = await interaction.original_response()
 
@@ -816,27 +822,26 @@ class valorant(commands.Cog):
         valorant.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid,username=requestedUser["name"])
         valorant.createTotalGameStatsImage(matchDetails["map"], finalGameStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid)
     
-    def createRoundImage(rounds:list):
+    def createRoundsSummary(rounds:list, targetUser:str, messageId:str):
         """
-        Creates an image for the round data. Must provide the round data as a list.
+        Creates an image for the round data. Must provide the round data as a list, and riot player name to summarize info.
         """
+        targetUserRoundStats = []
+
+        for i in range(len(rounds)):
+            rounds[i] = valorant.roundParser(rounds[i])
+            
+            # collect target user stats
+            targetUserRoundStats.append(rounds[i]["playerStats"][targetUser])
+
+        totalRounds = len(rounds)
+
         img = Image.new('RGB', (800, 1200), color = (6, 9, 23))
         draw = ImageDraw.Draw(img)
 
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=17)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=80)
 
-        def sortEvents(arr):
-            length = len(arr)
-            for i in range(length):
-                for j in range(0, length):
-                    if arr[i]["round"] < arr[j]["round"]:
-                        arr[i], arr[j] = arr[j], arr[i]
-            return arr
-
-        for i in range(len(round)):
-            draw.text([10, 10+(i*100)], f"{round[i]}", font=fnt, fill=(255,255,255))
-        
         img.save("round.png")
 
     # Function for creating the image for all players in a match data.
