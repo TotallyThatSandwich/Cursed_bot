@@ -187,9 +187,9 @@ class valorant(commands.Cog):
                                 file.write(f" {i},")
         
     # round parser
-    def roundParser(round:dict):   
+    def roundParser(round:dict, roundNumber:int=None):   
         """
-        Formats round data from the API to track all players in a round.
+        Formats round data from the API to track all players in a round. You can optionally pass in a round number (index at 1) to get attacker/defender.
         This returns a dictionary with stats for all players in the round and round events.
         """
         roundEvents = { 
@@ -200,7 +200,15 @@ class valorant(commands.Cog):
         }
         totalPlayerStats = {} # totalPlayerStats.update({playerName: playerStats})
         
-
+        def sortEvents(arr):
+            length = len(arr)
+            for i in range(length):
+                for j in range(length):
+                    if arr[i]["time"] < arr[j]["time"]:
+                        arr[i], arr[j] = arr[j], arr[i]
+            #print("sorted events:", str(arr))
+            return arr
+        
         for i in round["player_stats"]:
             playerName = (str(i["player_display_name"]).split("#"))[0]
             playerStats = {
@@ -231,6 +239,7 @@ class valorant(commands.Cog):
                         assist = {"assistant": m, "victim": str(k["victim_display_name"]).split("#")[0]}
                         roundEvents["assists"].append(assist)
                         print(f"Normal assist: {assist}")
+                print("kill event: ", str(json.dumps(killEvent, indent=4)))
                 roundEvents["kills"].append(killEvent)
 
             totalPlayerStats.update({playerName: playerStats})
@@ -250,15 +259,30 @@ class valorant(commands.Cog):
                 if i["assistant"] == j:
                     totalPlayerStats[j]["stats"]["assists"] += 1
         
+        
+        # sort kill events by time
+        roundEvents["kills"] = sortEvents(roundEvents["kills"])
+        
+        #print("round events sorted:", str(json.dumps(roundEvents, indent=4)))
+        
         if round["bomb_planted"] == True:
             roundEvents["other"].append({"plant": {"time": round["plant_events"]["plant_time_in_round"], "planter": str(round["plant_events"]["planted_by"]["display_name"]).split("#")[0]}})
-            attackingTeam = round["plant_events"]["planted_by"]["team"]
-                    
+
         finalRoundData = {
-            "roundInfo": {"winning_team": round["winning_team"], "end_type": round["end_type"], "attacking_team" : attackingTeam},
-            "roundEvents": roundEvents, #dictionary - {damage: [], kills: [], assists: []}
-            "playerStats": totalPlayerStats #dictionary - {playerName: playerStats}
+            "roundInfo": {"winning_team": round["winning_team"], "end_type": round["end_type"]},
+            "roundEvents": roundEvents, #dictionary - {damage: [], kills: [], assists: [], other: [{"plant": {"time": plantTime, "planter": planter}}]}
+            "playerStats": totalPlayerStats #dictionary - {playerName: {"playerName": playerName, "economy": economy, "damageEvents": damageEvents, "killEvents": killEvents, "stats": {"kills": kills, "deaths": deaths, "assists": assists}}
         }
+
+        if roundNumber < 13:
+            finalRoundData["roundInfo"].update({"attacking_team": "Red"})
+        elif roundNumber > 12 and roundNumber < 25:
+            finalRoundData["roundInfo"].update({"attacking_team": "Blue"})
+        elif roundNumber > 24:
+            if roundNumber % 2 != 0:
+                finalRoundData["roundInfo"].update({"attacking_team": "Red"})
+            else:
+                finalRoundData["roundInfo"].update({"attacking_team": "Blue"})
         return finalRoundData
 
 
@@ -813,6 +837,7 @@ class valorant(commands.Cog):
             matchDetails = response["data"][0]["metadata"]
             playerDetails = response["data"][0]["players"]["all_players"]
             teamDetails = response["data"][0]["teams"]
+            rounds:list = response["data"][0]["rounds"]
         elif response != None:
             matchDetails = response[0]
             playerDetails = response[1]
@@ -823,11 +848,23 @@ class valorant(commands.Cog):
         
         gameStats = {}
 
+        for i in range(len(rounds)):
+            gameRound = rounds[i]
+            rounds[i] = valorant.roundParser(gameRound, i+1)
+
         for i in playerDetails:
             if i["puuid"] == puuid:
                 requestedUser = i
-            gameStats = {}
-            gameStats.update({"team": i["team"],
+            # Calculate KAST%
+            kastRounds = 0
+            
+            for k in rounds:
+                k = k["playerStats"][i["name"]]["stats"]
+                
+                if k["kills"] > 0 or k["deaths"] == 0 or k["assists"] > 0:
+                    kastRounds += 1
+
+            gameStats = {"team": i["team"],
                             "kills": i["stats"]["kills"], #int
                             "deaths": i["stats"]["deaths"], #int
                             "assists": i["stats"]["assists"], #int
@@ -836,23 +873,28 @@ class valorant(commands.Cog):
                             "ACS": round((i["stats"]["score"]/totalRoundsPlayed), 2), #float
                             "ADR": round((i["damage_made"]/totalRoundsPlayed),2), #float
                             "DD": math.floor((i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed)), #float -> int
+                            "KAST": f'{round((kastRounds/totalRoundsPlayed)*100, 2)}%', #string
                             "rank": i["currenttier_patched"], #string
                             "team": i["team"], #string
                             "HS": f'{round((i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]+i["stats"]["legshots"])*100),2)}%', #string because of % sign
                             "agent": i["character"], #string
                             "tag":i["tag"], #string
                             "agentPfp": i["assets"]["agent"]["small"] #string
-                            })
+                            }
             
             finalGameStats.update({i["name"]: gameStats})
+            
+
         
         #print(json.dumps(finalGameStats, indent=4))
         personalUserStats = finalGameStats[requestedUser["name"]]
 
         valorant.createUserStatsImage(matchDetails["map"], personalUserStats["agentPfp"], personalUserStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid,username=requestedUser["name"])
         valorant.createTotalGameStatsImage(matchDetails["map"], finalGameStats, {"Red": teamDetails["red"]["rounds_won"], "Blue": teamDetails["blue"]["rounds_won"]}, messageid)
-    
-    def createRoundImage(rounds:list):
+
+
+
+    def createRoundImage(rounds:list, messageId:str, roundInfo:dict=None):
         """
         Creates an image for the round data. Must provide the round data as a list.
         """
@@ -861,14 +903,6 @@ class valorant(commands.Cog):
 
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=17)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=80)
-
-        def sortEvents(arr):
-            length = len(arr)
-            for i in range(length):
-                for j in range(0, length):
-                    if arr[i]["round"] < arr[j]["round"]:
-                        arr[i], arr[j] = arr[j], arr[i]
-            return arr
 
         for i in range(len(round)):
             draw.text([10, 10+(i*100)], f"{round[i]}", font=fnt, fill=(255,255,255))
@@ -1169,7 +1203,7 @@ class valorant(commands.Cog):
         response = response.json()
 
         if(response["status"] != 200):
-            return await interaction.response.send_message(f"Error with the status of {response['status']}", ephemeral=True)
+            return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
 
         valorant.formatMatchEmbed(message.id,response,userAccount["data"]["puuid"])
         
