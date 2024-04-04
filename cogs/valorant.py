@@ -75,7 +75,7 @@ class selectMatchUI(discord.ui.View):
         matchStats = valorant.matchStats[int(str(select.values[0]).lstrip("Match "))-1]
         userAccount = valorant.userAccount
         try:
-            valorant.formatMatchEmbed(interaction.message.id, [matchStats[0], matchStats[1], matchStats[2]],userAccount["data"]["puuid"])
+            valorant.formatMatchEmbed(interaction.message.id, [matchStats[0], matchStats[1], matchStats[2], matchStats[3]],userAccount["data"]["puuid"])
             with open("recentGames.txt", "a+") as file:
                 file.write(f"{interaction.message.id},")
             
@@ -330,7 +330,7 @@ class valorant(commands.Cog):
 
 
 
-    def getLengthAndHeightOfText(self, text:str, font:str, fontsize:int, width:int=1000, height:int=1000):
+    def getLengthAndHeightOfText(text:str, font:str, fontsize:int, width:int=1000, height:int=1000):
         """
         Returns a tuple: width and height of a Pillow ImageDraw.text in pixels.
         """
@@ -455,7 +455,7 @@ class valorant(commands.Cog):
     
         img.paste(mostPlayedAgent, (0,0))
 
-        width, height = self.getLengthAndHeightOfText(f"{accountInfo['data']['name']}", "fonts/OpenSans-Bold.ttf", boldFntSize)
+        width, height = valorant.getLengthAndHeightOfText(f"{accountInfo['data']['name']}", "fonts/OpenSans-Bold.ttf", boldFntSize)
         draw.text([605, 0], f"{accountInfo['data']['name']}", font=boldfnt, fill=(255,255,255))
         draw.text([605+(width+20), 30], f"#{accountInfo['data']['tag']}", font=subfnt, fill=(255,255,255))
         draw.text([605+(width+20), 60], f"{accountInfo['data']['region']}", font=subfnt, fill=(255,255,255))
@@ -478,11 +478,11 @@ class valorant(commands.Cog):
     
     
         draw.text([900, 220], f"Level", font=fnt, fill=(255,255,255))
-        width, height = self.getLengthAndHeightOfText(f"Level", "fonts/OpenSans-Regular.ttf", 65)
+        width, height = valorant.getLengthAndHeightOfText(f"Level", "fonts/OpenSans-Regular.ttf", 65)
         draw.text([900, 220+height+30], f"{accountInfo['data']['account_level']}", font=subfnt, fill=(255,255,255), align="left")
 
         # Draw average stats in the last ten games
-        width, height = self.getLengthAndHeightOfText("ADR", "fonts/OpenSans-Regular.ttf", 65)
+        width, height = valorant.getLengthAndHeightOfText("ADR", "fonts/OpenSans-Regular.ttf", 65)
         for i in range(len(averagedStats)):
             draw.text([620,470+(i*75)], f"{list(averagedStats.keys())[i]}", font=subfnt, fill=(156, 156, 156))
             draw.text([710, 470+(i*75)], f"{list(averagedStats.values())[i]}", font=fnt, fill=(255,255,255))
@@ -777,7 +777,7 @@ class valorant(commands.Cog):
             else:
                 otherStats.update({"winrate": {"wins": otherStats["winrate"]["wins"], "losses": otherStats["winrate"]["losses"], "draws": otherStats["winrate"]["draws"] + 1}})
             
-            matchStats.append([matchDetails, playerDetails, teamDetails])
+            matchStats.append([matchDetails, playerDetails, teamDetails, roundDetails])
         
         for i in mostPlayedAgent:
             #print("appending", i, mostPlayedAgent[i])
@@ -810,6 +810,9 @@ class valorant(commands.Cog):
     @app_commands.choices(mode=[app_commands.Choice(name="Competitive", value="competitive"), app_commands.Choice(name="Unrated", value="unrated"), app_commands.Choice(name="Premier", value="premier")])
     @app_commands.describe(user = "Grab user's match history.", amount = "Amount of games to get. Max is 10.", mode = "Mode of the games to get.")
     async def getGames(self, interaction:discord.Interaction, user:discord.Member=None, amount:int=5, mode:app_commands.Choice[str]=None):
+        """
+        Get the user's last 10 games and inputs them into ``createStatsImage()``. Returns the stats in an image format.
+        """
         await interaction.response.defer()
         message = await interaction.original_response()
 
@@ -895,6 +898,8 @@ class valorant(commands.Cog):
             matchDetails = response[0]
             playerDetails = response[1]
             teamDetails = response[2]
+            rounds = response[3]
+            
 
         
         totalRoundsPlayed = teamDetails["red"]["rounds_won"] + teamDetails["blue"]["rounds_won"]
@@ -905,7 +910,10 @@ class valorant(commands.Cog):
             if i["puuid"] == puuid:
                 requestedUser = i
             # Calculate KAST%
-            kastRounds = valorant.kastCalculater(rounds, i)
+            try:
+                kastRounds = valorant.kastCalculater(rounds, i)
+            except UnboundLocalError:
+                kastRounds = 0
 
             gameStats = {"team": i["team"],
                             "kills": i["stats"]["kills"], #int
@@ -1000,6 +1008,7 @@ class valorant(commands.Cog):
         draw = ImageDraw.Draw(img)
 
         fnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=20)
+        subfnt = ImageFont.truetype(font="fonts/OpenSans-Regular.ttf", size=12)
         boldfnt = ImageFont.truetype(font="fonts/OpenSans-Bold.ttf", size=80)
 
         def sortLowestToHighest(arr, stat):
@@ -1055,6 +1064,7 @@ class valorant(commands.Cog):
             draw.text((500 + widthOffset, 150+heightOffset), "ADR", font=fnt, fill=(255,255,255))
             draw.text((600 + widthOffset, 150+heightOffset), "HS%", font=fnt, fill=(255,255,255))
             draw.text((700 + widthOffset, 150+heightOffset), "DD", font=fnt, fill=(255,255,255))
+            draw.text((800 + widthOffset, 150+heightOffset), "KAST", font=fnt, fill=(255,255,255))
 
         widthOffset = 1060
         for i in range(blueTeamPlayerCount):
@@ -1074,7 +1084,9 @@ class valorant(commands.Cog):
                 name = str(blue_team[i][:12]) + "..."
             else:
                 name = blue_team[i]
-            draw.text((105, 170+(i*100)+heightOffset), f"{name}: #{stats[blue_team[i]]['tag']}", font=fnt, fill=(255,255,255))
+            draw.text((105, 170+(i*100)+heightOffset), f"{name}", font=fnt, fill=(255,255,255))
+            width, height = valorant.getLengthAndHeightOfText(name, "fonts/OpenSans-Regular.ttf", 20)
+            draw.text((105+width+2, 170+(i*100)+heightOffset), f"#{stats[blue_team[i]]['tag']}", font=subfnt, fill=(255,255,255))
 
             #draw rank
             if(stats[blue_team[i]]["rank"]) != "Unrated":
@@ -1102,6 +1114,9 @@ class valorant(commands.Cog):
 
             #draw DD
             draw.text((700, 170+(i*100)+heightOffset), f"{stats[blue_team[i]]['DD']}", font=fnt, fill=(255,255,255))
+            
+            #draw KAST
+            draw.text((800, 170+(i*100)+heightOffset), f"{stats[blue_team[i]]['KAST']}", font=fnt, fill=(255,255,255))
         
         for i in range(redTeamPlayerCount):
             urllib.request.urlretrieve(stats[red_team[i]]["agentPfp"], f"agentPfp{i+6}.png")
@@ -1120,7 +1135,10 @@ class valorant(commands.Cog):
                 name = str(red_team[i][:12]) + "..."
             else:
                 name = red_team[i]
-            draw.text((105+widthOffset, 170+(i*100)+heightOffset), f"{name}:#{stats[red_team[i]]['tag']}", font=fnt, fill=(255,255,255))
+
+            width, height = valorant.getLengthAndHeightOfText(name, "fonts/OpenSans-Regular.ttf", 20)
+            draw.text((105+widthOffset, 170+(i*100)+heightOffset), f"{name}", font=fnt, fill=(255,255,255))
+            draw.text((105+width+widthOffset+2, 170+(i*100)+heightOffset), f"#{stats[red_team[i]]['tag']}", font=subfnt, fill=(255,255,255))
 
             #draw rank
             if(stats[red_team[i]]["rank"]) != "Unrated":
@@ -1149,6 +1167,9 @@ class valorant(commands.Cog):
 
             #draw DD
             draw.text((700+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['DD']}", font=fnt, fill=(255,255,255))
+
+            #draw KAST
+            draw.text((800+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['KAST']}", font=fnt, fill=(255,255,255))
 
 
         img.save(f"gameStats{messageId}.png")
