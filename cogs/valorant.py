@@ -101,6 +101,8 @@ class accountSummaryUI(discord.ui.View):
                 await valorant.createCrosshairImage(crosshairs, interaction.user.id)
             except FileNotFoundError as e:
                 print(e)
+                logger.info("error creating image: ", str(e))
+                await interaction.response.send_message(content="Error!", ephemeral=True)
             crosshairSelect = crosshairSelectUI()
             crosshairSelectOptions:discord.ui.Select = crosshairSelect.children[0]
             crosshairSelectOptions.options.clear()
