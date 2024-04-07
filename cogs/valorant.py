@@ -93,12 +93,12 @@ class accountSummaryUI(discord.ui.View):
     
     @discord.ui.button(label="Crosshairs", style=discord.ButtonStyle.blurple, custom_id="crosshair")
     async def crosshair(self, interaction:discord.Interaction, button:discord.ui.Button):
-        crosshairs = valorant.getUserValorantCrosshairs(str(interaction.user.id))
+        crosshairs = valorant.getUserValorantCrosshairs(valorant.discordUser)
         if crosshairs == []:
             pass
         else:
             try:
-                await valorant.createCrosshairImage(crosshairs, interaction.user.id)
+                await valorant.createCrosshairImage(crosshairs, valorant.discordUser)
             except FileNotFoundError as e:
                 print(e)
                 logger.info("error creating image: ", str(e))
@@ -106,10 +106,12 @@ class accountSummaryUI(discord.ui.View):
             crosshairSelect = crosshairSelectUI()
             crosshairSelectOptions:discord.ui.Select = crosshairSelect.children[0]
             crosshairSelectOptions.options.clear()
+            
             for i in range(len(crosshairs)):
                 crosshairSelectOptions.add_option(label=f"Crosshair {i+1}", value=f"{crosshairs[i]}")
-            await interaction.response.edit_message(attachments=[discord.File(f"{interaction.user.id}crosshairDisplay.png")], view=crosshairSelect)
-            os.remove(f"{interaction.user.id}crosshairDisplay.png")
+            await interaction.response.edit_message(attachments=[discord.File(f"{valorant.discordUser}crosshairDisplay.png")], view=crosshairSelect)
+
+            os.remove(f"{valorant.discordUser}crosshairDisplay.png")
         
 
 
@@ -120,18 +122,19 @@ class manageCrosshairUI(discord.ui.View):
 
     @discord.ui.button(label="Delete crosshair", style=discord.ButtonStyle.red, custom_id="deleteCrosshair")
     async def deleteCrosshair(self, interaction:discord.Interaction, button:discord.ui.Button):
+        ownerID = valorant.discordUser
+        if ownerID != str(interaction.user.id):
+            return await interaction.response.send_message(content="You cannot delete someone else's crosshair!", ephemeral=True)
         try:
             with open("riotdetails.json", "r") as file:
                 riotdetails = json.load(file)
-                crosshairs:list = riotdetails[str(interaction.user.id)]["crosshairs"]
-                print(interaction.user.id)
-                try:
-                    crosshairs.remove(self.crosshair)
-                except:
-                    return await interaction.response.send_message(content="You cannot delete someone else's crosshair!", ephemeral=True)
-                
+                crosshairs:list = riotdetails[ownerID]["crosshairs"]
+                #print(ownerID)
+                crosshairs.remove(self.crosshair)
+
                 with open("riotdetails.json", "w") as writeFile:
                     json.dump(riotdetails, writeFile)
+
             return await interaction.response.send_message(content="Crosshair deleted!", ephemeral=True)
         except KeyError as e:
             logger.info("Error deleting crosshair: ", str(e))
@@ -156,11 +159,12 @@ class crosshairSelectUI(discord.ui.View):
 
 class valorant(commands.Cog):
 
-    def __init__(self, bot, matchStats, userAccount, authorizationKey):
+    def __init__(self, bot, matchStats, userAccount, authorizationKey, discordUser):
         self.bot = bot,
         self.matchStats = matchStats, # matchStats is a list of the match data in the format of [matchDetails, playerDetails, teamDetails]
         self.userAccount = userAccount # userAccount is the user's account details from the API
         self.authorizationKey = authorizationKey # authorizationKey is the API key for the valorant API
+        self.discordUser = discordUser
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -602,6 +606,8 @@ class valorant(commands.Cog):
         try:
             if targetAccount["crosshairs"] == []:
                 viewAccountSummary.children[0].disabled = True
+            else:
+                valorant.discordUser = str(interaction.user.id)
         except KeyError:
             viewAccountSummary.children[0].disabled = True
         
@@ -1475,4 +1481,4 @@ class valorant(commands.Cog):
             await interaction.followup.send(f"{team_name} not found")
 
 async def setup(bot):
-    await bot.add_cog(valorant(bot, None, None, settings.VALORANT_KEY))
+    await bot.add_cog(valorant(bot, None, None, settings.VALORANT_KEY, None))
