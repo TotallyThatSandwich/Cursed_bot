@@ -335,6 +335,24 @@ class valorant(commands.Cog):
 
 
 
+    def validateGameStats(userStats, totalRoundsPlayed):
+        validatedStats = {"hsPercentage": "0%", "KDR": 0}
+        totalShotsHit = userStats["stats"]["bodyshots"] + userStats["stats"]["headshots"] + userStats["stats"]["legshots"]
+
+        if totalShotsHit == 0:
+            validatedStats["hsPercentage"] = "N/A"
+        else:
+            validatedStats["hsPercentage"] = f'{round((userStats["stats"]["headshots"]/totalShotsHit)*100,2)}%'
+        
+        if userStats["stats"]["deaths"] == 0:
+            validatedStats["KDR"] = userStats["stats"]["kills"]
+        else:
+            validatedStats["KDR"] = round(userStats["stats"]["kills"]/userStats["stats"]["deaths"], 2)
+        
+        print(f"{userStats['name']} validated stats: {str(validatedStats)}")
+
+        return validatedStats
+
 
     def getLengthAndHeightOfText(text:str, font:str, fontsize:int, width:int=1000, height:int=1000):
         """
@@ -755,6 +773,10 @@ class valorant(commands.Cog):
 
             #KAST tracker
             kastRounds = valorant.kastCalculater(roundDetails, requestedUser)
+
+            validatedStats = valorant.validateGameStats(requestedUser, totalRoundsPlayed)
+            kdr = validatedStats["KDR"]
+            hs = validatedStats["hsPercentage"]
             
             #print("KAST: ", str(kastRounds), str(totalRoundsPlayed), str(round((kastRounds/totalRoundsPlayed)*100,2)))
             gameStats.append({
@@ -763,14 +785,14 @@ class valorant(commands.Cog):
                 "deaths": requestedUser["stats"]["deaths"], #int
                 "assists": requestedUser["stats"]["assists"], #int
                 "KDA": f'{requestedUser["stats"]["kills"]}/{requestedUser["stats"]["deaths"]}/{requestedUser["stats"]["assists"]}', #string
-                "KDR": requestedUser["stats"]["kills"]/requestedUser["stats"]["deaths"], #float
+                "KDR": kdr, #float
                 "ACS": round((requestedUser["stats"]["score"]/totalRoundsPlayed), 2), #float
                 "ADR": round((requestedUser["damage_made"]/totalRoundsPlayed),2), #float
                 "KAST": f'{round((kastRounds/totalRoundsPlayed)*100, 2)}%',
                 "DD": math.floor((requestedUser["damage_made"]/totalRoundsPlayed)-(requestedUser["damage_received"]/totalRoundsPlayed)), #float -> int
                 "rank": requestedUser["currenttier_patched"], #string
                 "team": requestedUser["team"], #string
-                "HS": f'{round((requestedUser["stats"]["headshots"]/(requestedUser["stats"]["bodyshots"]+requestedUser["stats"]["headshots"]+requestedUser["stats"]["legshots"])*100),2)}%', #string because of % sign
+                "HS": f'{hs}', #string because of % sign
                 "agentPfp": requestedUser["assets"]["agent"]["small"] #string
             })
             try:
@@ -907,8 +929,6 @@ class valorant(commands.Cog):
             playerDetails = response[1]
             teamDetails = response[2]
             rounds = response[3]
-            
-
         
         totalRoundsPlayed = teamDetails["red"]["rounds_won"] + teamDetails["blue"]["rounds_won"]
         
@@ -923,24 +943,36 @@ class valorant(commands.Cog):
             except UnboundLocalError:
                 kastRounds = 0
 
-            gameStats = {"team": i["team"],
-                            "kills": i["stats"]["kills"], #int
-                            "deaths": i["stats"]["deaths"], #int
-                            "assists": i["stats"]["assists"], #int
-                            "KDA": f'{i["stats"]["kills"]}/{i["stats"]["deaths"]}/{i["stats"]["assists"]}', #string
-                            "KDR": i["stats"]["kills"]/i["stats"]["deaths"], #float
-                            "ACS": round((i["stats"]["score"]/totalRoundsPlayed), 2), #float
-                            "ADR": round((i["damage_made"]/totalRoundsPlayed),2), #float
-                            "DD": math.floor((i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed)), #float -> int
-                            "KAST": f'{round((kastRounds/totalRoundsPlayed)*100, 2)}%', #string
-                            "rank": i["currenttier_patched"], #string
-                            "team": i["team"], #string
-                            "HS": f'{round((i["stats"]["headshots"]/(i["stats"]["bodyshots"]+i["stats"]["headshots"]+i["stats"]["legshots"])*100),2)}%', #string because of % sign
-                            "agent": i["character"], #string
-                            "tag":i["tag"], #string
-                            "agentPfp": i["assets"]["agent"]["small"] #string
-                            }
-            
+            # Validation (divison by 0 checks)
+            validatedStats = valorant.validateGameStats(i, totalRoundsPlayed)
+            hsPercentage = validatedStats["hsPercentage"]
+            kdr = validatedStats["KDR"]
+            try:
+                gameStats = {"team": i["team"],
+                                "kills": i["stats"]["kills"], #int
+                                "deaths": i["stats"]["deaths"], #int
+                                "assists": i["stats"]["assists"], #int
+                                "KDA": f'{i["stats"]["kills"]}/{i["stats"]["deaths"]}/{i["stats"]["assists"]}', #string
+                                "KDR": kdr, #float
+                                "ACS": round((i["stats"]["score"]/totalRoundsPlayed), 2), #float
+                                "ADR": round((i["damage_made"]/totalRoundsPlayed),2), #float
+                                "DD": math.floor((i["damage_made"]/totalRoundsPlayed)-(i["damage_received"]/totalRoundsPlayed)), #float -> int
+                                "KAST": f'{round((kastRounds/totalRoundsPlayed)*100, 2)}%', #string
+                                "rank": i["currenttier_patched"], #string
+                                "team": i["team"], #string
+                                "HS": f'{hsPercentage}', #string because of % sign
+                                "agent": i["character"], #string
+                                "tag":i["tag"], #string
+                                "agentPfp": i["assets"]["agent"]["small"] #string
+                                }
+            except Exception as e:
+                logger.info("Error assigning stats:", str(e))
+                print(e)
+                with open("errorMatchDetails.json", "w+") as file:
+                    json.dump(response, file, indent=4)
+                break
+             
+            print(f"{i['name']} stats: {str(gameStats)}")
             finalGameStats.update({i["name"]: gameStats})
             
 
@@ -1076,6 +1108,7 @@ class valorant(commands.Cog):
 
         widthOffset = 1060
         for i in range(blueTeamPlayerCount):
+            print(f"Drawing {blue_team[i]}")
             #draw agent pfp
             urllib.request.urlretrieve(stats[blue_team[i]]["agentPfp"], f"agentPfp{i}.png")
             agentPfp = Image.open(f"agentPfp{i}.png")
@@ -1088,10 +1121,14 @@ class valorant(commands.Cog):
             img.paste(agentPfp, (0, 150+(i*100)+heightOffset))
 
             #draw username:tag
-            if(len(blue_team[i]) > 12):
-                name = str(blue_team[i][:12]) + "..."
+            username:str = blue_team[i]
+            if not (username.isalnum() and username.isascii()):
+                name = f"Player {i+1}"
             else:
-                name = blue_team[i]
+                if(len(username) > 12):
+                    name = str(blue_team[i][:12]) + "..."
+                else:
+                    name = blue_team[i]
             draw.text((105, 170+(i*100)+heightOffset), f"{name}", font=fnt, fill=(255,255,255))
             width, height = valorant.getLengthAndHeightOfText(name, "fonts/OpenSans-Regular.ttf", 20)
             draw.text((105+width+2, 170+(i*100)+heightOffset), f"#{stats[blue_team[i]]['tag']}", font=subfnt, fill=(255,255,255))
@@ -1125,24 +1162,31 @@ class valorant(commands.Cog):
             
             #draw KAST
             draw.text((800, 170+(i*100)+heightOffset), f"{stats[blue_team[i]]['KAST']}", font=fnt, fill=(255,255,255))
+
+            print(f"succesfully drew {blue_team[i]}")
         
         for i in range(redTeamPlayerCount):
-            urllib.request.urlretrieve(stats[red_team[i]]["agentPfp"], f"agentPfp{i+6}.png")
-            agentPfp = Image.open(f"agentPfp{i+6}.png")
+            print(f"Drawing {red_team[i]}")
+            urllib.request.urlretrieve(stats[red_team[i]]["agentPfp"], f"agentPfp{i+5}.png")
+            agentPfp = Image.open(f"agentPfp{i+5}.png")
             agentPfp = agentPfp.resize([100, 100])
             agentProfilePictureBckg = Image.new("RGBA", agentPfp.size, color=(6, 9, 23))       
             agentProfilePictureBckg.paste(agentPfp, (0,0), mask=agentPfp)
-            agentProfilePictureBckg.convert("RGB").save(f"agentPfp{i+6}.jpg")
-            agentPfp = Image.open(f"agentPfp{i+6}.jpg")
-            os.remove(f"agentPfp{i+6}.png")
+            agentProfilePictureBckg.convert("RGB").save(f"agentPfp{i+5}.jpg")
+            agentPfp = Image.open(f"agentPfp{i+5}.jpg")
+            os.remove(f"agentPfp{i+5}.png")
             agentPfp = agentPfp.resize([100, 100])
             img.paste(agentPfp, (widthOffset, 150+(i*100)+heightOffset))
 
             #draw username:tag
-            if(len(red_team[i]) > 12):
-                name = str(red_team[i][:12]) + "..."
+            username:str = red_team[i]
+            if not (username.isalnum() and username.isascii()):
+                name = f"Player {i+1}"
             else:
-                name = red_team[i]
+                if(len(username) > 12):
+                    name = str(red_team[i][:12]) + "..."
+                else:
+                    name = red_team[i]
 
             width, height = valorant.getLengthAndHeightOfText(name, "fonts/OpenSans-Regular.ttf", 20)
             draw.text((105+widthOffset, 170+(i*100)+heightOffset), f"{name}", font=fnt, fill=(255,255,255))
@@ -1150,31 +1194,34 @@ class valorant(commands.Cog):
 
             #draw rank
             if(stats[red_team[i]]["rank"]) != "Unrated":
+                print("Drawing rank")
                 rankImage = Image.open(ranks[stats[red_team[i]]["rank"]])
                 rankImage = rankImage.resize([50, 50])
                 rankImageBckg = Image.new("RGBA", rankImage.size, color=(6, 9, 23))
                 rankImageBckg.paste(rankImage, (0,0), mask=rankImage)
-                rankImageBckg.convert("RGB").save(f"rank{i+6}.jpg")
-                rankImage = Image.open(f"rank{i+6}.jpg")
+                rankImageBckg.convert("RGB").save(f"rank{i+5}.jpg")
+                rankImage = Image.open(f"rank{i+5}.jpg")
                 img.paste(rankImage, (105+widthOffset, 195+(i*100)+heightOffset))
-                os.remove(f"rank{i+6}.jpg")
-
-            #draw.text((105, 690+(i*100)), f"{stats[red_team[i]]['rank']}", font=fnt, fill=(255,255,255))
+                os.remove(f"rank{i+5}.jpg")
 
             #draw KDA
             draw.text((300+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['KDA']}", font=fnt, fill=(255,255,255))
-
+            
             #draw ACS
             draw.text((400+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['ACS']}", font=fnt, fill=(255,255,255))
+            
 
             #draw ADR
             draw.text((500+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['ADR']}", font=fnt, fill=(255,255,255))
+            
 
             #draw HS%
             draw.text((600+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['HS']}", font=fnt, fill=(255,255,255))
+            
 
             #draw DD
             draw.text((700+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['DD']}", font=fnt, fill=(255,255,255))
+            
 
             #draw KAST
             draw.text((800+widthOffset, 170+(i*100)+heightOffset), f"{stats[red_team[i]]['KAST']}", font=fnt, fill=(255,255,255))
@@ -1182,7 +1229,7 @@ class valorant(commands.Cog):
 
         img.save(f"gameStats{messageId}.png")
         os.remove("map.png")
-        for i in range(totalPlayerCount+1):
+        for i in range(totalPlayerCount):
             try:
                 os.remove(f"agentPfp{i}.jpg")
             except:
@@ -1409,7 +1456,7 @@ class valorant(commands.Cog):
             file.write("")
 
         for i in os.listdir(os.getcwd()):
-            if "userStats" in i or "gameStats" in i:
+            if "userStats" in i or "gameStats" in i or "agentPfp" in i or "map.png" in i:
                 os.remove(i)
 
         await interaction.response.send_message("Cleared recent games list and images", ephemeral=True)
