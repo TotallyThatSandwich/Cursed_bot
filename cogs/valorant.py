@@ -773,6 +773,10 @@ class valorant(commands.Cog):
 
             #KAST tracker
             kastRounds = valorant.kastCalculater(roundDetails, requestedUser)
+
+            validatedStats = valorant.validateGameStats(requestedUser, totalRoundsPlayed)
+            kdr = validatedStats["KDR"]
+            hs = validatedStats["hsPercentage"]
             
             #print("KAST: ", str(kastRounds), str(totalRoundsPlayed), str(round((kastRounds/totalRoundsPlayed)*100,2)))
             gameStats.append({
@@ -781,14 +785,14 @@ class valorant(commands.Cog):
                 "deaths": requestedUser["stats"]["deaths"], #int
                 "assists": requestedUser["stats"]["assists"], #int
                 "KDA": f'{requestedUser["stats"]["kills"]}/{requestedUser["stats"]["deaths"]}/{requestedUser["stats"]["assists"]}', #string
-                "KDR": requestedUser["stats"]["kills"]/requestedUser["stats"]["deaths"], #float
+                "KDR": kdr, #float
                 "ACS": round((requestedUser["stats"]["score"]/totalRoundsPlayed), 2), #float
                 "ADR": round((requestedUser["damage_made"]/totalRoundsPlayed),2), #float
                 "KAST": f'{round((kastRounds/totalRoundsPlayed)*100, 2)}%',
                 "DD": math.floor((requestedUser["damage_made"]/totalRoundsPlayed)-(requestedUser["damage_received"]/totalRoundsPlayed)), #float -> int
                 "rank": requestedUser["currenttier_patched"], #string
                 "team": requestedUser["team"], #string
-                "HS": f'{round((requestedUser["stats"]["headshots"]/(requestedUser["stats"]["bodyshots"]+requestedUser["stats"]["headshots"]+requestedUser["stats"]["legshots"])*100),2)}%', #string because of % sign
+                "HS": f'{hs}', #string because of % sign
                 "agentPfp": requestedUser["assets"]["agent"]["small"] #string
             })
             try:
