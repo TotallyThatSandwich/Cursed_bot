@@ -29,9 +29,13 @@ class matchStatsUI(discord.ui.View):
                 i.disabled = True
             else:
                 i.disabled = False
-        
-        await interaction.response.edit_message(attachments=[discord.File(f"gameStats{interaction.message.id}.png")], delete_after=600, view=totalGameStatsUI())
-        
+        try:
+            await interaction.response.edit_message(attachments=[discord.File(f"gameStats{interaction.message.id}.png")], delete_after=600, view=totalGameStatsUI())
+        except FileNotFoundError as e:
+            print(e)
+            logger.info("error creating image: ", str(e))
+            await interaction.response.send_message(content="Error: stats cannot be found.", ephemeral=True)
+            
 class totalGameStatsUI(discord.ui.View):
     def __init__(self):
         super().__init__()
@@ -235,6 +239,9 @@ class valorant(commands.Cog):
             response = response.json()
 
             if(response["status"] != 200):
+                logger.info(f"Error with the status of {response['status']}\n{json.dumps(response, indent=2)}")
+                if response["status"] == 400:
+                    return f"The API is currently down. Please try again later."
                 return f"Error with the status of {response['status']}"
 
             response.update({"crosshair": crosshairs})
@@ -713,7 +720,10 @@ class valorant(commands.Cog):
                             targetAccount = riotDetails[userId]
                         except Exception as e:
                             print(e)
-                            return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
+                            if targetAccount == "The API is currently down. Please try again later.":
+                                return await interaction.followup.send("The API is currently down. Please try again later.", ephemeral=True)
+                            else:
+                                return await interaction.followup.send("User has not logged in yet! They must run /login_for_valorant before trying this command", ephemeral=True)
         else:
             if riottag == None:
                 return await interaction.followup.send("Please provide a riot tag", ephemeral=True)
@@ -728,8 +738,10 @@ class valorant(commands.Cog):
             #json.dump(response, file, indent=4)
         
         if response["status"] != 200:
+            logger.info(f"Error with the status of {response['status']}\n{json.dumps(response, indent=2)}")
+            if response["status"] == 400:
+                return await interaction.followup.send(f"The API is currently down. Please try again later.", ephemeral=True)
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
-
         try:
             userStatsFromMatchHistory = await self.calculateUserStatsFromGames(response, targetAccount)
             matchStats = userStatsFromMatchHistory["matchStats"]
@@ -1047,7 +1059,9 @@ class valorant(commands.Cog):
 
 
         if(response["status"] != 200):
-            logger.info(response)
+            logger.info(f"Error with the status of {response['status']}\n{json.dumps(response, indent=2)}")
+            if response["status"] == 400:
+                return await interaction.followup.send(f"The API is currently down. Please try again later.", ephemeral=True)
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
         
         try:
@@ -1524,6 +1538,9 @@ class valorant(commands.Cog):
         response = response.json()
 
         if(response["status"] != 200):
+            logger.info(f"Error with the status of {response['status']}\n{json.dumps(response, indent=2)}")
+            if response["status"] == 400:
+                return await interaction.followup.send(f"The API is currently down. Please try again later.", ephemeral=True)
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
 
         valorant.formatMatchEmbed(message.id,response,userAccount["data"]["puuid"])
@@ -1588,6 +1605,9 @@ class valorant(commands.Cog):
         response = response.json()
 
         if(response["status"] != 200):
+            logger.info(f"Error with the status of {response['status']}\n{json.dumps(response, indent=2)}")
+            if response["status"] == 400:
+                return await interaction.followup.send(f"The API is currently down. Please try again later.", ephemeral=True)
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
         
         for i in response["data"]:
@@ -1610,6 +1630,9 @@ class valorant(commands.Cog):
         response = response.json()
 
         if(response["status"] != 200):
+            logger.info(f"Error with the status of {response['status']}\n{json.dumps(response, indent=2)}")
+            if response["status"] == 400:
+                return await interaction.followup.send(f"The API is currently down. Please try again later.", ephemeral=True)
             return await interaction.followup.send(f"Error with the status of {response['status']}", ephemeral=True)
         
 
