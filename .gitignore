@@ -169,3 +169,7 @@ cython_debug/
 /recentGames.txt
 
 /steamdetails.json
+
+# lists
+/blacklist.txt
+/optoutlist.txt
