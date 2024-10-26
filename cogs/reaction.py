@@ -144,7 +144,8 @@ class react(commands.Cog):
             await message.reply("erm what the sigma plain uncanny like skbidi toiledt bro💀dont bro know quandale dingle already did the forgis on the jeep thug shaker banban style with baller💀")
         
         if len(message.mentions) == 1 and str(message.mentions[0].id) not in botIDs:
-            await message.reply(dexterMessage.format(user=f"<@{message.mentions[0].id}>", dexterCopypasta=dexterCopypastas[random.randint(0, len(dexterCopypastas)-1)]))
+            if random.randint(1, 5) == 1:
+                await message.reply(dexterMessage.format(user=f"<@{message.mentions[0].id}>", dexterCopypasta=dexterCopypastas[random.randint(0, len(dexterCopypastas)-1)]))
 
     @app_commands.command(name="opt-out", description="opt-out of the bot's responses")
     async def optOut(self, interaction: discord.Interaction):
