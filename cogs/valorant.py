@@ -6,7 +6,6 @@ from discord import ui
 
 import json
 import requests
-from io import BytesIO
 
 from asyncio import sleep
 
@@ -187,6 +186,12 @@ class valorant(commands.Cog):
         self.authorizationKey = authorizationKey # authorizationKey is the API key for the valorant API
         self.discordUser = discordUser
 
+        if not os.path.exists("recentGames.txt"):
+            with open("recentGames.txt", "w") as file:
+                file.write("")
+        
+
+
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         print("deleted", str(message.id))
@@ -269,6 +274,7 @@ class valorant(commands.Cog):
 
         response = requests.get(url=f"https://api.henrikdev.xyz/valorant/v1/account/{username}/{str(tag)}", headers={"Authorization": self.authorizationKey})
         response:dict = response.json()
+        print(response)
 
         if(response["status"] != 200):
             return f"Invalid Riot ID or Tag with the error of {response['status']}"
@@ -1238,6 +1244,9 @@ class valorant(commands.Cog):
             "Diamond 1": "images/valorantRanks/Diamond_1_Rank.png",
             "Diamond 2": "images/valorantRanks/Diamond_2_Rank.png",
             "Diamond 3": "images/valorantRanks/Diamond_3_Rank.png",
+            "Ascendant 1" : "images/valorantRanks/Ascendant_1_Rank.png",
+            "Ascendant 2" : "images/valorantRanks/Ascendant_2_Rank.png",
+            "Ascendant 3" : "images/valorantRanks/Ascendant_3_Rank.png",
             "Immortal 1": "images/valorantRanks/Immortal_1_Rank.png",
             "Immortal 2": "images/valorantRanks/Immortal_2_Rank.png",
             "Immortal 3": "images/valorantRanks/Immortal_3_Rank.png",

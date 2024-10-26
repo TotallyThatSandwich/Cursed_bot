@@ -10,13 +10,11 @@ from chatterbot.trainers import ListTrainer
 import settings as settings
 logger = settings.logging.getLogger("bot")
 
-
 genericChatBot = ChatBot("GenericBot")
-
     
 trainer = ListTrainer(genericChatBot)
 
-usableChannels = ["1028185142491107328"]
+botIDs = settings.BOT_IDS.replace("[", "").replace("]", "").replace("'", "").split(", ")
 
 conversation = [
     "Hello",
@@ -32,6 +30,10 @@ trainer.train(conversation)
 class botView(discord.ui.View):
     def __init__(self):
         super().__init__()
+    
+        
+    
+    
     
     @discord.ui.button(label="Delete", style=discord.ButtonStyle.red)
     async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -51,19 +53,18 @@ class botView(discord.ui.View):
 class genericAI(commands.Cog):
 
     def __init__(self, bot):
+        if not os.path.exists("blacklist.txt"):
+            with open("blacklist.txt", "w") as blacklist:
+                blacklist.write("")
         self.bot = bot,
 
     
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message:discord.Message):
         botQuery = str(message.content)
-        
-        if "1210389365185056818" in botQuery:
-            botQuery = botQuery.replace(f"<@1210389365185056818>", "")
-        else:
-            botQuery = botQuery.replace(f"<@1210512184103403530>", "")
 
         async def formatResponse(query):
+            """Formats the response from the bot using ``query``. If the response is a reply, ``query`` should be formatted as ``{replying message}: {message being replied to}``"""
             response = str(genericChatBot.get_response(query))
             if "1210389365185056818" in response:
                     response = response.replace("<@1210389365185056818>", "")
@@ -79,54 +80,47 @@ class genericAI(commands.Cog):
 
             return response
 
-        # checks if someone is mentioning the bot and checks if it is the bot itself
-        if "1210389365185056818" in message.content or "1210512184103403530" in message.content and not (str(message.author.id) in "1210389365185056818" or str(message.author.id) in "1210512184103403530"):
-            if "reply" in str(message.type):
-                response = await formatResponse(f"{botQuery}: {message.reference.content}")
-            else: 
-                response = await formatResponse(botQuery)
+        # checks if the author is not the bot, then formats a response.
+        mentionedIDs = [str(i.id) for i in message.mentions]
+        # print(any(i in mentionedIDs for i in botIDs), mentionedIDs, botIDs)
+        if not str(message.author.id) in botIDs and any(i in mentionedIDs for i in botIDs):
+            response = await formatResponse(botQuery)
             await message.channel.send(response)
-
-        elif "reply" in str(message.type) and ("1210389365185056818" in message.mentions or "1210512184103403530" in message.mentions) and not (str(message.author.id) in "1210389365185056818" or str(message.author.id) in "1210512184103403530"):
-            reference = message.reference.message_id
-            if reference.author.id in ["1210389365185056818", "1210512184103403530"]:
-                response = await formatResponse(botQuery)
-                return await message.channel.send(response)
         
-        # checks if someone is replying to the bot, then check if it is replying to bot or random message.
-        if "reply" in str(message.type): #1210512184103403530
-            repliedMessage = await message.channel.fetch_message(message.reference.message_id)
-            print("\nreplied message: ", str(repliedMessage.content), "\noriginal message: ", (repliedMessage.author.id), "\nmessage author:", message.author.id)
-
-            if str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530":
-                if str(message.author.id) != "1210389365185056818" and str(message.author.id) != "1210512184103403530":
-                    response = await formatResponse(botQuery)
-                    return await message.channel.send(response)
-            elif "1210389365185056818" not in str(repliedMessage.content) or "1210512184103403530" not in str(repliedMessage.content) or repliedMessage.author.id == message.author.id:
-                with open("blacklist.txt", "r") as blacklist: #1210512184103403530
-                    blacklist = blacklist.readlines()
-                    for i in blacklist:
-                        if i == message.author.id:
-                            return 
-                        
+        # training the bot:
+        if not str(message.author.id) in botIDs:
+            if "reply" in str(message.type):
+                repliedMessage = await message.channel.fetch_message(message.reference.message_id)
                 trainer.train([repliedMessage.content, message.content])
                 print(f"training bot with {[repliedMessage.content, message.content]}")
                 logger.info(f"Training bot with {[repliedMessage.content, message.content]}")
+
+        # # checks if someone is replying to the bot, then check if it is replying to bot or random message.
+        # if "reply" in str(message.type): #1210512184103403530
+        #     repliedMessage = await message.channel.fetch_message(message.reference.message_id)
+        #     print("\nreplied message: ", str(repliedMessage.content), "\noriginal message: ", (repliedMessage.author.id), "\nmessage author:", message.author.id)
+
+        #     if str(repliedMessage.author.id) == "1210389365185056818" or str(repliedMessage.author.id) == "1210512184103403530":
+        #         if str(message.author.id) != "1210389365185056818" and str(message.author.id) != "1210512184103403530":
+        #             response = await formatResponse(botQuery)
+        #             return await message.channel.send(response)
+        #     elif "1210389365185056818" not in str(repliedMessage.content) or "1210512184103403530" not in str(repliedMessage.content) or repliedMessage.author.id == message.author.id or repliedMessage.author.id == "1210389365185056818" or repliedMessage.author.id == "1210512184103403530":
+        #         with open("blacklist.txt", "r") as blacklist: #1210512184103403530
+        #             blacklist = blacklist.readlines()
+        #             if message.author.id in blacklist:
+        #                 return
             
                 
     
     @app_commands.command(name="train_bot", description="Train the bot with the last x messages in the channel")
     @app_commands.describe(limit = "How many messages should the bot be trained with?")
     async def trainMessageData(self, interaction: discord.Interaction, limit: int):
-        
-        try:
-            with open("blacklist.txt", "r") as blacklist:
-                blacklist = blacklist.readlines()
-                for i in blacklist:
-                    if i == interaction.user.id:
-                        return await interaction.response.send_message("You are blacklisted from training the bot", ephemeral=True)
-        except:
-            pass
+        with open("blacklist.txt", "r") as blacklist:
+            blacklist = blacklist.readlines()
+            for i in blacklist:
+                if i == interaction.user.id:
+                    return await interaction.response.send_message("You are blacklisted from training the bot", ephemeral=True)
+
         
         history = interaction.channel.history(limit=limit)
         finalMessageTrain = []

@@ -16,6 +16,8 @@ sys.path.append(os.path.abspath("../"))
 import settings 
 logger = settings.logging.getLogger("bot")
 
+botIDs = settings.BOT_IDS
+
 nerds = ["https://tenor.com/view/nerd-emoji-nerd-emoji-avalon-play-avalon-gif-24241051", "https://tenor.com/view/pon-gif-15097379091171620462"]
 
 randomCopypastas = ["If you shit in the sink at exactly 4:20 am and yell “amogus” 69 times,a shadowy figured called mom will come to beat you up and you will wake up in a place called the orphanage",
@@ -24,16 +26,21 @@ randomCopypastas = ["If you shit in the sink at exactly 4:20 am and yell “amog
                     ]
 competitiveShooters = ["valorant", "counter strike"]
 
+dexterCopypastas = ["gay booty toucher", "ice trucker mogger", "twin tower toppler", "gay child fondler"]
+dexterMessage = "I can't believe that {user} was the {dexterCopypasta}"
 
 class react(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-    
-    
 
+        if not os.path.exists("optoutlist.txt"):
+            with open("optoutlist.txt", "w") as optoutlist:
+                optoutlist.write("")
+    
+    
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         try:
             print(str(message.channel.name).lower())
         except AttributeError:
@@ -79,7 +86,6 @@ class react(commands.Cog):
         
         if "crazy" in messageContent:
             await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
-
 
         if "i hate" in messageContent:
             word = messageContent.split("i hate")
@@ -130,9 +136,15 @@ class react(commands.Cog):
             #print(playerName)
 
             await message.reply(f"This {player} player is fantastic. Just needs to work on communication, aim, map awareness, crosshair placement, economy management, pistol aim, awp flicks, grenade spots, smoke spots, pop flashes, positioning, bomb plant positions, retake ability, bunny hopping, spray control and getting a kill.")
-        
+
         if random.randint(1, 100) == 1:
             await message.reply(randomCopypastas[random.randint(0, len(randomCopypastas)-1)])
+
+        if messageContent in ["sigma", "skbidi", "rizz"]: 
+            await message.reply("erm what the sigma plain uncanny like skbidi toiledt bro💀dont bro know quandale dingle already did the forgis on the jeep thug shaker banban style with baller💀")
+        
+        if len(message.mentions) == 1 and str(message.mentions[0].id) not in botIDs:
+            await message.reply(dexterMessage.format(user=f"<@{message.mentions[0].id}>", dexterCopypasta=dexterCopypastas[random.randint(0, len(dexterCopypastas)-1)]))
 
     @app_commands.command(name="opt-out", description="opt-out of the bot's responses")
     async def optOut(self, interaction: discord.Interaction):
