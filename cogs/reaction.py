@@ -6,6 +6,7 @@ import random
 import sys
 import nltk
 from nltk import pos_tag
+from syllapy import count
 
 
 nltk.download('averaged_perceptron_tagger')
@@ -26,7 +27,14 @@ randomCopypastas = ["If you shit in the sink at exactly 4:20 am and yell “amog
                     ]
 competitiveShooters = ["valorant", "counter strike"]
 
-dexterCopypastas = ["gay booty toucher", "ice trucker mogger", "twin tower toppler", "gay child fondler"]
+if not os.path.exists("dexterList.txt"):
+    with open("dexter.txt", "w") as dexter:
+        dexter.write('gay booty toucher, ice truck mogger, twin tower toppler, gay child fondler')
+
+dexterCopypastas = []
+with open("dexter.txt", "r") as dexter:
+    dexterCopypastas = dexter.read().split(", ")
+
 dexterMessage = "I can't believe that {user} was the {dexterCopypasta}"
 
 class react(commands.Cog):
@@ -144,7 +152,8 @@ class react(commands.Cog):
             await message.reply("erm what the sigma plain uncanny like skbidi toiledt bro💀dont bro know quandale dingle already did the forgis on the jeep thug shaker banban style with baller💀")
         
         if len(message.mentions) == 1 and str(message.mentions[0].id) not in botIDs:
-            await message.reply(dexterMessage.format(user=f"<@{message.mentions[0].id}>", dexterCopypasta=dexterCopypastas[random.randint(0, len(dexterCopypastas)-1)]))
+            if random.randint(1, 100) == 1:
+                await message.reply(dexterMessage.format(user=f"<@{message.mentions[0].id}>", dexterCopypasta=dexterCopypastas[random.randint(0, len(dexterCopypastas)-1)]))
 
     @app_commands.command(name="opt-out", description="opt-out of the bot's responses")
     async def optOut(self, interaction: discord.Interaction):
@@ -164,6 +173,18 @@ class react(commands.Cog):
             for i in optoutlistLines:
                 optoutlistWrite.write(f"{i}\n")
         await interaction.response.send_message("You have been removed from the opt-out list.", delete_after=10,  ephemeral=True)
+    
+    # @app_commands.command(name="add_dexter_phrase", description="Add a new Dexter phrase for the bot to use.")
+    async def addDexterPhrase(self, interaction: discord.Interaction, phrase: str):
+        if not len(phrase) in range(2,5):
+            return await interaction.response.send_message("The phrase must have 2 to 5 words.", delete_after=10, ephemeral=True)
+        if not phrase.endswith("er"):
+            return await interaction.response.send_message("The phrase must end with 'er'.", delete_after=10, ephemeral=True)
+
+        with open("dexter.txt", "a") as dexter:
+            dexter.write(f", {phrase}")
+        dexterCopypastas.append(phrase)
+        await interaction.response.send_message("Dexter phrase added successfully.", delete_after=10, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(react(bot))
