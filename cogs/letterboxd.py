@@ -12,6 +12,8 @@ from math import floor
 from dateutil import tz
 from datetime import datetime, time
 
+from bs4 import BeautifulSoup
+
 date = datetime.now(tz=tz.tzlocal())
 midnight = time(hour=0, minute=0, second=0, microsecond=0, tzinfo=tz.tzlocal())
 letterboxdLogo = "https://a.ltrbxd.com/logos/letterboxd-decal-dots-pos-rgb-500px.png"
@@ -43,7 +45,7 @@ class letterboxdActivityEmbed(discord.Embed):
 
 
 class letterboxdFilmEmbed(discord.Embed):
-    def __init__(self, title = None, type = 'rich', url = None, timestamp = None, rating = None, review = None, images = [None, None], author:discord.Member = None, data = None, spoiler:bool = False):
+    def __init__(self, title = None, type = 'rich', url = None, timestamp = None, rating = None, review = None, images = [None, None], author:discord.Member = None, data:dict = None, spoiler:bool = False):
         super().__init__(colour=None, title=title, type=type, url=url, description=None, timestamp=timestamp)
 
         if data != None:
@@ -86,7 +88,7 @@ class letterboxdFilmEmbed(discord.Embed):
         self.set_footer(text="Letterboxd watcher", icon_url=letterboxdLogo)
         self.setColour(self.rating)
 
-    def buildFromResponse(self, data, user:discord.Member):
+    def buildFromResponse(self, data:dict, user:discord.Member):
         print(f"building from {data}")
         self.title = data["film"]
         self.url = data["link"]
@@ -148,6 +150,12 @@ class letterboxd(commands.Cog):
 
         return response["films"]
 
+    def createReviewEmbed(self, data:dict, user:discord.Member) -> discord.Embed:
+        """
+        Returns a ``discord.Embed`` object using the data acquired from the API.
+        """
+        return letterboxdFilmEmbed(data=data, author=user)
+
    
     @app_commands.command(name="letterboxd_setup", description="Set up the Letterboxd channel for the bot to post in")
     async def letterboxdSetup(self, interaction:discord.Interaction, chat:discord.TextChannel):
@@ -180,13 +188,45 @@ class letterboxd(commands.Cog):
             
             self.letterboxdDetails["users"][interaction.user.id] = {
                 "username": letterboxdusername,
-                "activity": response
+                "activity": response,
+                "favourites": []
             }
             
             with open("letterboxd.json", "w") as f:
                 json.dump(self.letterboxdDetails, f)
 
             await interaction.response.send_message("You have opted in for Letterboxd tracking.", ephemeral=True)
+
+    #@app_commands.command(name="fetch_favourites", description="Fetch the user's favourite films")
+    async def fetchFavourites(self, interaction:discord.Interaction, user:discord.Member=None):
+        if user == None:
+            user = interaction.user
+
+        if not self.checkIfSignedIn(user):
+            return await interaction.response.send_message("The user is not signed in for Letterboxd tracking", ephemeral=True)
+
+        response = self.letterboxdDetails["users"][str(user.id)]["favourites"]
+        if response == None:
+            return await interaction.response.send_message("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
+        
+        response = requests.get(url=f"letterboxd.com/{user}")
+        response = BeautifulSoup(response.content, "html.parser")
+        
+        favourites = []
+        for film in response.find_all("li", attrs={"data-object-name": "favorite film"}):
+            filmName = film.find("div", {"data-film-name": True})["data-film-name"]
+            
+            filmLink = film.find("a", {"href": True})["href"]
+            filmLink = f"https://letterboxd.com{filmLink}"
+
+            response = requests.get(filmLink)
+            response = BeautifulSoup(response.content, "html.parser")
+            
+            tmdbID = response.find("body", {"data-tmdb-id": True})["data-tmdb-id"]
+            response = requests.get(f"{letterboxdURL}/film/{tmdbID}")
+            response = response.json()
+
+        interaction.response.send_message("Favourites have been fetched!", ephemeral=True)
 
     @app_commands.command(name="fetch_latest_letterboxd", description="Fetch the latest Letterboxd activity")
     async def fetchLatestLetterBoxd(self, interaction:discord.Interaction, user:discord.Member=None):
@@ -200,7 +240,7 @@ class letterboxd(commands.Cog):
         if response == None:
             return await interaction.response.send_message("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
         
-        embed = letterboxdFilmEmbed(data=response[0], author=user)
+        embed = self.createReviewEmbed(data=response[0], user=user)
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="fetch_letterboxd_activity", description="Fetch the latest Letterboxd activity")
@@ -242,7 +282,7 @@ class letterboxd(commands.Cog):
             if response[0] != self.letterboxdDetails["users"][user]["activity"][0]:
                 member = await self.bot.fetch_user(user)
                 try:
-                    embed = letterboxdFilmEmbed(data=response[0], author=member)
+                    embed = self.createReviewEmbed(data=response[0], user=member)
                     channel = self.bot.get_channel(self.letterboxdDetails["chat"])
                     await channel.send(embed=embed)
                 except Exception as e:
