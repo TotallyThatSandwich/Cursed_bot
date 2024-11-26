@@ -149,10 +149,13 @@ class letterboxd(commands.Cog):
         return response["films"]
 
    
-    @app_commands.command()
-    async def letterboxd_setup(self, interaction:discord.Interaction, chat:discord.TextChannel):
-        if not interaction.user.top_role.permissions.administrator:
-            return await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+    @app_commands.command(name="letterboxd_setup", description="Set up the Letterboxd channel for the bot to post in")
+    async def letterboxdSetup(self, interaction:discord.Interaction, chat:discord.TextChannel):
+        for role in interaction.user.roles:
+            if role.permissions.manage_channels:
+                break
+        else:
+            return await interaction.response.send_message("You do not have the required permissions to run this command", ephemeral=True)
         
         with open("letterboxd.json", "w") as f:
             self.letterboxdDetails["chat"] = chat.id
