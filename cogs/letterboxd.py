@@ -193,7 +193,7 @@ class letterboxd(commands.Cog):
         if not self.checkIfSignedIn(user):
             return await interaction.response.send_message("You have not signed in for Letterboxd tracking", ephemeral=True)
 
-        response = self.letterboxdDetails["users"][str(user.id)]["activity"][0]
+        response = self.letterboxdDetails["users"][str(user.id)]["activity"]
         if response == None:
             return await interaction.response.send_message("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
         
@@ -231,7 +231,6 @@ class letterboxd(commands.Cog):
     @tasks.loop(hours=1)
     async def getLetterboxd(self):
         for user in self.letterboxdDetails["users"]:
-            url = f"{letterboxdURL}/{user}"
 
             response = await self.fetchFromLetterboxd(user=user["username"], amount=1)
             if response == None:
@@ -248,16 +247,16 @@ class letterboxd(commands.Cog):
                     return
                 
 
-                self.letterboxdDetails["users"][user] = response[0]
+                self.letterboxdDetails["users"][user]["activity"].insert(0, response[0])
+                self.letterboxdDetails["users"][user]["activity"].pop(5)
 
                 with open("letterboxd.json", "w") as f:
                     json.dump(self.letterboxdDetails, f)
 
-    @tasks.loop(time=midnight)
+    # WIP @tasks.loop(time=midnight)
     async def getLast5(self):
         if date.weekday() == 4:
             for user in self.letterboxdDetails["users"]:
-                url = f"{letterboxdURL}/{user}?amount=5"
 
                 response = requests.get(url=letterboxdURL)
                 response = response.json()
