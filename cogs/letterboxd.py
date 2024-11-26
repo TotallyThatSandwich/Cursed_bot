@@ -105,7 +105,7 @@ class letterboxdFilmEmbed(discord.Embed):
     def ratingEmojis(self, rating) -> str:
         rating = float(rating)
         if rating.is_integer():
-            return "⭐" * rating
+            return "⭐" * floor(rating)
         else:
             return ("⭐" * floor(rating)) + "½"
 
