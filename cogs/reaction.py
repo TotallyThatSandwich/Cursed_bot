@@ -6,7 +6,6 @@ import random
 import sys
 import nltk
 from nltk import pos_tag
-from syllapy import count
 
 
 nltk.download('averaged_perceptron_tagger')
