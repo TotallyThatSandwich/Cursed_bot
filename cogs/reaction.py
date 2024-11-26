@@ -6,6 +6,7 @@ import random
 import sys
 import nltk
 from nltk import pos_tag
+from asyncio import run
 
 
 nltk.download('averaged_perceptron_tagger')
@@ -184,6 +185,35 @@ class react(commands.Cog):
             dexter.write(f", {phrase}")
         dexterCopypastas.append(phrase)
         await interaction.response.send_message("Dexter phrase added successfully.", delete_after=10, ephemeral=True)
+
+    # Voice commands
+    #@commands.Cog.listener('on_voice_state_update')
+    async def on_voice_state_update(self, member, before, after: discord.VoiceState):
+        if after.channel is None:
+            return
+        
+        if str(member.id) in botIDs:
+            return
+        
+        voiceClient = discord.utils.get(self.bot.voice_clients, guild=after.channel.guild)
+        if voiceClient is not None:
+            await voiceClient.disconnect(force=True)
+
+        voiceChannel:discord.VoiceChannel = after.channel
+        
+        if random.randint(1,1) == 1:
+            voiceClient = await voiceChannel.connect(timeout=10.0, reconnect=False, self_mute=False, self_deaf=True)
+            
+            async def disconnect(error):
+                if error:
+                    print(error)
+                await voiceClient.disconnect(force=True)
+            try:
+                await voiceClient.play(discord.FFmpegPCMAudio("https://www.youtube.com/watch?v=dQw4w9WgXcQ"), after=disconnect)
+            except Exception as e:
+                print("error:", e)
+                await voiceClient.disconnect(force=True)
+            
 
 async def setup(bot):
     await bot.add_cog(react(bot))
