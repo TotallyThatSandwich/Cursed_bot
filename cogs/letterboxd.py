@@ -162,7 +162,8 @@ class letterboxd(commands.Cog):
     @app_commands.command(name="letterboxd_setup", description="Set up the Letterboxd channel for the bot to post in")
     async def letterboxdSetup(self, interaction:discord.Interaction, chat:discord.TextChannel):
         for role in interaction.user.roles:
-            if role.permissions.manage_channels:
+            print(role.permissions.manage_channels)
+            if role.permissions.manage_channels or role.permissions.administrator:
                 break
         else:
             return await interaction.response.send_message("You do not have the required permissions to run this command", ephemeral=True)
@@ -276,8 +277,8 @@ class letterboxd(commands.Cog):
     @tasks.loop(hours=1)
     async def getLetterboxd(self):
         for user in self.letterboxdDetails["users"]:
-
-            response = await self.fetchFromLetterboxd(user=user["username"], amount=1)
+            username = self.letterboxdDetails["users"][user]["username"]
+            response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=1)
             if response == None:
                 return logger.error(f"Error fetching data for {user}")
 
@@ -285,12 +286,11 @@ class letterboxd(commands.Cog):
                 member = await self.bot.fetch_user(user)
                 try:
                     embed = self.createReviewEmbed(data=response[0], user=member)
-                    channel = self.bot.get_channel(self.letterboxdDetails["chat"])
+                    channel = self.bot.get_channel(int(self.letterboxdDetails["chat"]))
                     await channel.send(embed=embed)
                 except Exception as e:
                     logger.error(e)
                     return
-                
 
                 self.letterboxdDetails["users"][user]["activity"].insert(0, response[0])
                 self.letterboxdDetails["users"][user]["activity"].pop(5)
@@ -302,7 +302,6 @@ class letterboxd(commands.Cog):
     async def getLast5(self):
         if date.weekday() == 4:
             for user in self.letterboxdDetails["users"]:
-
                 response = requests.get(url=letterboxdURL)
                 response = response.json()
         
