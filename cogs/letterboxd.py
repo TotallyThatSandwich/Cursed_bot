@@ -125,6 +125,8 @@ class letterboxd(commands.Cog):
         if os.path.exists("letterboxd.json"):
             with open("letterboxd.json", "r") as f:
                 self.letterboxdDetails = json.load(f)
+        
+        self.getLetterboxd.start()
 
 
     async def fetchFromLetterboxd(self, user:discord.Member = None, letterboxdUser=None, amount=1) -> list:
