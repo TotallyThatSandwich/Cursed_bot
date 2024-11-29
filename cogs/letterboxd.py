@@ -301,7 +301,7 @@ class letterboxd(commands.Cog):
                         logger.error(e)
                         return
 
-                    self.letterboxdDetails["users"][user]["activity"].insert(filmCount, response[filmCount])
+                    self.letterboxdDetails["users"][user]["activity"].insert(0, response[filmCount])
                     self.letterboxdDetails["users"][user]["activity"].pop(5)
 
                     with open("letterboxd.json", "w") as f:
