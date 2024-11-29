@@ -19,7 +19,7 @@ midnight = time(hour=0, minute=0, second=0, microsecond=0, tzinfo=tz.tzlocal())
 letterboxdLogo = "https://a.ltrbxd.com/logos/letterboxd-decal-dots-pos-rgb-500px.png"
 
 letterboxdDetails = {
-    "chat": None,
+    "chat": "",
     "users": {}
 }
 letterboxdURL = os.getenv("LETTERBOXD_URL")
@@ -45,7 +45,7 @@ class letterboxdActivityEmbed(discord.Embed):
 
 
 class letterboxdFilmEmbed(discord.Embed):
-    def __init__(self, title = None, type = 'rich', url = None, timestamp = None, rating = None, review = None, images = [None, None], author:discord.Member = None, data:dict = None, spoiler:bool = False):
+    def __init__(self, title = None, type = 'rich', url = None, timestamp = None, rating = None, review = None, watchDate=None, images = [None, None], author:discord.Member = None, data:dict = None, spoiler:bool = False):
         super().__init__(colour=None, title=title, type=type, url=url, description=None, timestamp=timestamp)
 
         if data != None:
@@ -56,6 +56,7 @@ class letterboxdFilmEmbed(discord.Embed):
             self.poster = images[0]
             self.backdrop = images[1]
             self.spoiler = spoiler
+            self.watchDate = watchDate
             
             
         self.set_author(name=author.display_name, icon_url=author.display_avatar.url)
@@ -67,6 +68,9 @@ class letterboxdFilmEmbed(discord.Embed):
         
         if self.rating != None:
             self.add_field(name="Rating", value=self.ratingEmojis(self.rating), inline=False)
+        
+        if self.watchDate != None:
+            self.add_field(name="Watched", value=self.watchDate, inline=True)
 
         if self.review != None:
             if self.spoiler:
@@ -75,8 +79,8 @@ class letterboxdFilmEmbed(discord.Embed):
                 paragraphs = self.review.split("\\n")
                 length = len(paragraphs)
                 print(length)
-                if length > 24:
-                    length = 24
+                if length > 23:
+                    length = 23
                     self.insert_field_at(0, name="", value=f"Read full review [here]({self.url})", inline=False)
                 for i in range(length):
                     if len(paragraphs[i]) > 1024:
@@ -85,7 +89,7 @@ class letterboxdFilmEmbed(discord.Embed):
                         paragraphs[i+1] = final + " " + paragraphs[i+1]
                     self.add_field(name ="", value=paragraphs[i], inline=False)
 
-        self.set_footer(text="Setup tracking with ``/letterboxd_login``", icon_url=letterboxdLogo)
+        self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
         self.setColour(self.rating)
 
     def buildFromResponse(self, data:dict, user:discord.Member):
@@ -96,6 +100,7 @@ class letterboxdFilmEmbed(discord.Embed):
         self.review = data["member"]["review"]
         self.poster = data["images"]["poster"]
         self.backdrop = data["images"]["backdrop"] 
+        self.watchDate = data["member"]["watched date"]
         
         if "This review may contain spoilers." in self.review:
             self.spoiler = True
@@ -172,7 +177,7 @@ class letterboxd(commands.Cog):
         
         with open("letterboxd.json", "w") as f:
             self.letterboxdDetails["chat"] = chat.id
-            json.dump(self.letterboxdDetails, f)
+            json.dump(self.letterboxdDetails, f, indent=4)
         await interaction.response.send_message(f"Letterboxd channel has been set to {chat.mention}", ephemeral=True)
 
     @app_commands.command(name="letterboxd_login", description="Opt in for Letterboxd tracking. Run this command again to opt out.")
@@ -182,7 +187,7 @@ class letterboxd(commands.Cog):
             self.letterboxdDetails["users"].pop(str(interaction.user.id))
 
             with open("letterboxd.json", "w") as f:
-                json.dump(self.letterboxdDetails, f)
+                json.dump(self.letterboxdDetails, f, indent=4)
 
             await interaction.response.send_message("You have opted out of Letterboxd tracking.", ephemeral=True)
         else:
@@ -198,7 +203,7 @@ class letterboxd(commands.Cog):
             }
             
             with open("letterboxd.json", "w") as f:
-                json.dump(self.letterboxdDetails, f)
+                json.dump(self.letterboxdDetails, f, indent=4)
 
             await interaction.response.send_message("You have opted in for Letterboxd tracking.", ephemeral=True)
 
@@ -272,13 +277,14 @@ class letterboxd(commands.Cog):
         
         self.letterboxdDetails["users"][str(user.id)]["activity"] = response
         with open("letterboxd.json", "w") as f:
-            json.dump(self.letterboxdDetails, f)
+            json.dump(self.letterboxdDetails, f, indent=4)
 
         await interaction.response.send_message("Activity has been updated!", ephemeral=True)
         
     @tasks.loop(hours=1)
     async def getLetterboxd(self):
         for user in self.letterboxdDetails["users"]:
+            print(f"checking for activity from {user}")
             username = self.letterboxdDetails["users"][user]["username"]
             response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=5)
             if response == None:
@@ -297,7 +303,7 @@ class letterboxd(commands.Cog):
                         logger.error(e)
                         return
 
-                    self.letterboxdDetails["users"][user]["activity"].insert(filmCount, response[filmCount])
+                    self.letterboxdDetails["users"][user]["activity"].insert(0, response[filmCount])
                     self.letterboxdDetails["users"][user]["activity"].pop(5)
 
                     with open("letterboxd.json", "w") as f:
