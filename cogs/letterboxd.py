@@ -19,7 +19,7 @@ midnight = time(hour=0, minute=0, second=0, microsecond=0, tzinfo=tz.tzlocal())
 letterboxdLogo = "https://a.ltrbxd.com/logos/letterboxd-decal-dots-pos-rgb-500px.png"
 
 letterboxdDetails = {
-    "chat": None,
+    "chat": "",
     "users": {}
 }
 letterboxdURL = os.getenv("LETTERBOXD_URL")
@@ -89,7 +89,7 @@ class letterboxdFilmEmbed(discord.Embed):
                         paragraphs[i+1] = final + " " + paragraphs[i+1]
                     self.add_field(name ="", value=paragraphs[i], inline=False)
 
-        self.set_footer(text="Setup tracking with ``/letterboxd_login``", icon_url=letterboxdLogo)
+        self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
         self.setColour(self.rating)
 
     def buildFromResponse(self, data:dict, user:discord.Member):
@@ -100,6 +100,7 @@ class letterboxdFilmEmbed(discord.Embed):
         self.review = data["member"]["review"]
         self.poster = data["images"]["poster"]
         self.backdrop = data["images"]["backdrop"] 
+        self.watchDate = data["member"]["watched date"]
         
         if "This review may contain spoilers." in self.review:
             self.spoiler = True
@@ -142,11 +143,11 @@ class letterboxd(commands.Cog):
         if user != None:
             try:
                 user = self.letterboxdDetails["users"][str(user.id)]["username"]
-                url = f"{letterboxdURL}/activity/{user}?amount={amount}"
+                url = f"{letterboxdURL}/{user}?amount={amount}"
             except KeyError:
                 return None
         elif letterboxdUser != None:
-            url = f"{letterboxdURL}/activity/{letterboxdUser}?amount={amount}"
+            url = f"{letterboxdURL}/{letterboxdUser}?amount={amount}"
         else:
             raise ValueError("Either a user or a letterboxd username must be provided")
             return None
@@ -176,7 +177,7 @@ class letterboxd(commands.Cog):
         
         with open("letterboxd.json", "w") as f:
             self.letterboxdDetails["chat"] = chat.id
-            json.dump(self.letterboxdDetails, f)
+            json.dump(self.letterboxdDetails, f, indent=4)
         await interaction.response.send_message(f"Letterboxd channel has been set to {chat.mention}", ephemeral=True)
 
     @app_commands.command(name="letterboxd_login", description="Opt in for Letterboxd tracking. Run this command again to opt out.")
@@ -186,7 +187,7 @@ class letterboxd(commands.Cog):
             self.letterboxdDetails["users"].pop(str(interaction.user.id))
 
             with open("letterboxd.json", "w") as f:
-                json.dump(self.letterboxdDetails, f)
+                json.dump(self.letterboxdDetails, f, indent=4)
 
             await interaction.response.send_message("You have opted out of Letterboxd tracking.", ephemeral=True)
         else:
@@ -202,7 +203,7 @@ class letterboxd(commands.Cog):
             }
             
             with open("letterboxd.json", "w") as f:
-                json.dump(self.letterboxdDetails, f)
+                json.dump(self.letterboxdDetails, f, indent=4)
 
             await interaction.response.send_message("You have opted in for Letterboxd tracking.", ephemeral=True)
 
@@ -276,13 +277,14 @@ class letterboxd(commands.Cog):
         
         self.letterboxdDetails["users"][str(user.id)]["activity"] = response
         with open("letterboxd.json", "w") as f:
-            json.dump(self.letterboxdDetails, f)
+            json.dump(self.letterboxdDetails, f, indent=4)
 
         await interaction.response.send_message("Activity has been updated!", ephemeral=True)
         
     @tasks.loop(hours=1)
     async def getLetterboxd(self):
         for user in self.letterboxdDetails["users"]:
+            print(f"checking for activity from {user}")
             username = self.letterboxdDetails["users"][user]["username"]
             response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=5)
             if response == None:
