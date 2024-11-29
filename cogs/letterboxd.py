@@ -45,7 +45,7 @@ class letterboxdActivityEmbed(discord.Embed):
 
 
 class letterboxdFilmEmbed(discord.Embed):
-    def __init__(self, title = None, type = 'rich', url = None, timestamp = None, rating = None, review = None, images = [None, None], author:discord.Member = None, data:dict = None, spoiler:bool = False):
+    def __init__(self, title = None, type = 'rich', url = None, timestamp = None, rating = None, review = None, watchDate=None, images = [None, None], author:discord.Member = None, data:dict = None, spoiler:bool = False):
         super().__init__(colour=None, title=title, type=type, url=url, description=None, timestamp=timestamp)
 
         if data != None:
@@ -56,6 +56,7 @@ class letterboxdFilmEmbed(discord.Embed):
             self.poster = images[0]
             self.backdrop = images[1]
             self.spoiler = spoiler
+            self.watchDate = watchDate
             
             
         self.set_author(name=author.display_name, icon_url=author.display_avatar.url)
@@ -67,6 +68,9 @@ class letterboxdFilmEmbed(discord.Embed):
         
         if self.rating != None:
             self.add_field(name="Rating", value=self.ratingEmojis(self.rating), inline=False)
+        
+        if self.watchDate != None:
+            self.add_field(name="Watched", value=self.watchDate, inline=True)
 
         if self.review != None:
             if self.spoiler:
@@ -75,8 +79,8 @@ class letterboxdFilmEmbed(discord.Embed):
                 paragraphs = self.review.split("\\n")
                 length = len(paragraphs)
                 print(length)
-                if length > 24:
-                    length = 24
+                if length > 23:
+                    length = 23
                     self.insert_field_at(0, name="", value=f"Read full review [here]({self.url})", inline=False)
                 for i in range(length):
                     if len(paragraphs[i]) > 1024:
@@ -138,11 +142,11 @@ class letterboxd(commands.Cog):
         if user != None:
             try:
                 user = self.letterboxdDetails["users"][str(user.id)]["username"]
-                url = f"{letterboxdURL}/{user}?amount={amount}"
+                url = f"{letterboxdURL}/activity/{user}?amount={amount}"
             except KeyError:
                 return None
         elif letterboxdUser != None:
-            url = f"{letterboxdURL}/{letterboxdUser}?amount={amount}"
+            url = f"{letterboxdURL}/activity/{letterboxdUser}?amount={amount}"
         else:
             raise ValueError("Either a user or a letterboxd username must be provided")
             return None
