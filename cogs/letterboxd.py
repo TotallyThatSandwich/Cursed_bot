@@ -35,7 +35,7 @@ class letterboxdActivityEmbed(discord.Embed):
 
         self.set_author(name=user.display_name, icon_url=user.display_avatar.url)
         self.description = self.buildDescription()
-        self.set_footer(text="Letterboxd watcher", icon_url=letterboxdLogo)
+        self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
 
     def buildDescription(self) -> str:
         description = ""
@@ -85,7 +85,7 @@ class letterboxdFilmEmbed(discord.Embed):
                         paragraphs[i+1] = final + " " + paragraphs[i+1]
                     self.add_field(name ="", value=paragraphs[i], inline=False)
 
-        self.set_footer(text="Letterboxd watcher", icon_url=letterboxdLogo)
+        self.set_footer(text="Setup tracking with ``/letterboxd_login``", icon_url=letterboxdLogo)
         self.setColour(self.rating)
 
     def buildFromResponse(self, data:dict, user:discord.Member):
@@ -112,7 +112,9 @@ class letterboxdFilmEmbed(discord.Embed):
     def setColour(self, rating):
         if rating <= 2:
             self.colour = discord.Colour.red()
-        elif rating <= 4:
+        elif rating <= 3.5:
+            self.colour = discord.Colour.orange()
+        elif rating <= 4.5:
             self.colour = discord.Colour.green()
         else:
             self.colour = discord.Colour.gold()
@@ -278,25 +280,28 @@ class letterboxd(commands.Cog):
     async def getLetterboxd(self):
         for user in self.letterboxdDetails["users"]:
             username = self.letterboxdDetails["users"][user]["username"]
-            response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=1)
+            response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=5)
             if response == None:
                 return logger.error(f"Error fetching data for {user}")
 
-            if response[0] != self.letterboxdDetails["users"][user]["activity"][0]:
-                member = await self.bot.fetch_user(user)
-                try:
-                    embed = self.createReviewEmbed(data=response[0], user=member)
-                    channel = self.bot.get_channel(int(self.letterboxdDetails["chat"]))
-                    await channel.send(embed=embed)
-                except Exception as e:
-                    logger.error(e)
-                    return
+            for filmCount in range(0, len(response) - 1):
+                print(f"\nchecking if {response[filmCount]} is in {user}'s activity")
+                if not (response[filmCount] in self.letterboxdDetails["users"][user]["activity"]):
+                    print("Not in activity, sending message\n")
+                    member = await self.bot.fetch_user(user)
+                    try:
+                        embed = self.createReviewEmbed(data=response[filmCount], user=member)
+                        channel = self.bot.get_channel(int(self.letterboxdDetails["chat"]))
+                        await channel.send(embed=embed)
+                    except Exception as e:
+                        logger.error(e)
+                        return
 
-                self.letterboxdDetails["users"][user]["activity"].insert(0, response[0])
-                self.letterboxdDetails["users"][user]["activity"].pop(5)
+                    self.letterboxdDetails["users"][user]["activity"].insert(filmCount, response[filmCount])
+                    self.letterboxdDetails["users"][user]["activity"].pop(5)
 
-                with open("letterboxd.json", "w") as f:
-                    json.dump(self.letterboxdDetails, f)
+                    with open("letterboxd.json", "w") as f:
+                        json.dump(self.letterboxdDetails, f, indent=4)
 
     # WIP @tasks.loop(time=midnight)
     async def getLast5(self):
