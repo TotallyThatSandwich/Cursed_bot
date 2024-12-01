@@ -277,9 +277,9 @@ class letterboxdFilmWatchUI(discord.ui.View):
         self.interaction:discord.Interaction = interaction
 
         userActivity = self.letterboxd.letterboxdDetails["users"][str(user.id)]["activity"]
-        if userActivity[self.count + 1] == None:
+        if self.count + 1 == len(userActivity):
             self.next.disabled = True
-        if userActivity[self.count - 1] == None:
+        if self.count - 1 == -1:
             self.previous.disabled = True
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
