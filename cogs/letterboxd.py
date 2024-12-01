@@ -112,8 +112,14 @@ class letterboxd(commands.Cog):
         else:
             if "letterboxd.com" in letterboxdusername:
                 letterboxdusername = letterboxdusername.split(".com/")[1].rstrip("/")
-            
-            response = await self.fetchFromLetterboxd(letterboxdUser=letterboxdusername, amount=5)
+
+
+            try:
+                response = await self.fetchFromLetterboxd(letterboxdUser=letterboxdusername, amount=5)
+            except:
+                logger.error(f"Error fetching data for {letterboxdusername}")
+                await interaction.response.send_message("There was an error fetching data. Please try again some other time.", ephemeral=True)
+                raise ValueError(f"Error fetching data for {letterboxdusername}")
             
             self.letterboxdDetails["users"][interaction.user.id] = {
                 "username": letterboxdusername,
@@ -216,7 +222,7 @@ class letterboxd(commands.Cog):
             if response == None:
                 return logger.error(f"Error fetching data for {user}")
 
-            for filmCount in range(0, len(response) - 1):
+            for filmCount in range(len(response)):
                 print(f"\nchecking if {response[filmCount]} is in {user}'s activity")
                 if not (response[filmCount] in self.letterboxdDetails["users"][user]["activity"]):
                     print("Not in activity, sending message\n")
@@ -270,10 +276,11 @@ class letterboxdFilmWatchUI(discord.ui.View):
         self.count = count
         self.interaction:discord.Interaction = interaction
 
-        if self.count == 0:
-            self.previous.disabled = True
-        elif self.count == 4:
+        userActivity = self.letterboxd.letterboxdDetails["users"][str(user.id)]["activity"]
+        if userActivity[self.count + 1] == None:
             self.next.disabled = True
+        if userActivity[self.count - 1] == None:
+            self.previous.disabled = True
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
     async def previous(self, interaction:discord.Interaction, button:discord.ui.Button, ):
