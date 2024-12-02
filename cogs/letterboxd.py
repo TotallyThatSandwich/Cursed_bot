@@ -39,10 +39,13 @@ class letterboxd(commands.Cog):
         
         self.getLetterboxd.start()
 
-    def getActivityCount(self, user:discord, data:dict) -> int:
+    def getActivityCount(self, user:discord.Member, data:dict) -> int:
         count = self.letterboxdDetails["users"][str(user.id)]["activity"].index(data)
         print(f"activity count:", count)
         return count
+
+    def formatReview(review:str) -> str:
+        review.replace("&amp;", "&")
 
 
     async def fetchFromLetterboxd(self, user:discord.Member = None, letterboxdUser=None, amount=1) -> list:
@@ -67,11 +70,18 @@ class letterboxd(commands.Cog):
         response = response.json()
 
         return response["films"]
+    
+    async def fetchMemberFromId(self, userID:int) -> discord.Member:
+        user = await self.bot.fetch_user(userID)
+        return user
 
-    def createReviewEmbed(self, data:dict, user:discord.Member, interaction:discord.Interaction=None):
+    def createReviewEmbed(self, data:dict, user, interaction:discord.Interaction=None):
         """
         Returns a ``discord.Embed`` object using the data acquired from the API.
         """
+        if type(user) != discord.Member and type(user) != discord.User:
+            user = self.fetchMemberFromId(int(user)) # Fetches user object from discord id
+
         if data["film"] in self.letterboxdDetails["films"].keys():
             self.letterboxdDetails["films"][data["film"]].update({str(user.id): data})
         else:
@@ -212,11 +222,14 @@ class letterboxd(commands.Cog):
         for user in self.letterboxdDetails["users"]:
             print(f"checking for activity from {user}")
             username = self.letterboxdDetails["users"][user]["username"]
-            
+
+
             try:
-                self.letterboxdDetails["users"][user]["discord username"] = self.bot.get_user(user).display_name
+                discordUsername = self.bot.get_user(int(user)).display_name
             except:
-                self.letterboxdDetails["users"][user]["discord username"] = None
+                discordUsername = None
+        
+            self.letterboxdDetails["users"][user].update({"discord username": discordUsername})
 
             response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=5)
             if response == None:
@@ -239,8 +252,8 @@ class letterboxd(commands.Cog):
                     if len(self.letterboxdDetails["users"][user]["activity"]) > 5:
                         self.letterboxdDetails["users"][user]["activity"].pop(5)
 
-                    with open("letterboxd.json", "w") as f:
-                        json.dump(self.letterboxdDetails, f, indent=4)
+        with open("letterboxd.json", "w") as f:
+            json.dump(self.letterboxdDetails, f, indent=4)
 
     # WIP @tasks.loop(time=midnight)
     async def getLast5(self):
@@ -277,10 +290,13 @@ class letterboxdFilmWatchUI(discord.ui.View):
         self.interaction:discord.Interaction = interaction
 
         userActivity = self.letterboxd.letterboxdDetails["users"][str(user.id)]["activity"]
-        if userActivity[self.count + 1] == None:
+        if self.count + 1 == len(userActivity):
             self.next.disabled = True
-        if userActivity[self.count - 1] == None:
+        if self.count - 1 == -1:
             self.previous.disabled = True
+        
+        self.film = userActivity[self.count]
+        self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["film"]]
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
     async def previous(self, interaction:discord.Interaction, button:discord.ui.Button, ):
@@ -296,21 +312,43 @@ class letterboxdFilmWatchUI(discord.ui.View):
         nextFilm = self.letterboxd.letterboxdDetails["users"][userID]["activity"][self.count + 1]
         embed, ui = self.letterboxd.createReviewEmbed(data=nextFilm, user=self.user, interaction=self.interaction)
         await interaction.response.edit_message(embed=embed, view=ui)
+        
+    async def selectReview(self, interaction:discord.Interaction, select:discord.ui.Select=None):
+        select = self.select
+        print("selected review:", select.values[0])
+        review = self.reviews[select.values[0]]
+        user = await self.letterboxd.fetchMemberFromId(int(select.values[0]))
+        embed, view = self.letterboxd.createReviewEmbed(data=review, user=user, interaction=interaction)
+        await interaction.response.edit_message(embed=embed, view=view)
 
-    #@discord.ui.button(label="See other reviews", style=discord.ButtonStyle.primary)
+
+    @discord.ui.button(label="See other reviews", style=discord.ButtonStyle.primary)
     async def seeOtherReviews(self,interaction:discord.Interaction, button:discord.ui.Button):
-        film = self.letterboxd.letterboxdDetails["users"][str(self.user.id)]["activity"][self.count]
-        reviews = self.letterboxd.letterboxdDetails["films"][film["film"]]
+        film = self.film
+        reviews = self.reviews
+
         embed = discord.Embed(title=f"{film['film']}", colour=discord.Colour.blurple(), url=film["link"])
+        embed.set_thumbnail(url=self.film["images"]["poster"])
+        embed.set_image(url=self.film["images"]["backdrop"])
+        options = []
+
         for i in range(len(reviews)):
-            review = reviews[list(reviews.keys())[i]]
-            print(type(review))
+            userId = list(reviews.keys())[i]
+            review = reviews[userId] # fetches user's review
             user = self.letterboxd.letterboxdDetails["users"][list(reviews.keys())[i]]["discord username"]
             if i > 25:
                 pass # WIP: Add pagination
-            embed.add_field(name=user, value=self.letterboxd.ratingEmojis(rating=float(review["member"]["rating"])), inline=False)
 
-        await interaction.message.edit(embed=embed, view=None)
+            embed.add_field(name=user, value=self.letterboxd.ratingEmojis(rating=float(review["member"]["rating"])), inline=False)
+            options.append(discord.SelectOption(label=user, value=str(userId), description=f"{self.letterboxd.ratingEmojis(rating=float(review['member']['rating']))}"))
+
+        selectReviewUI = discord.ui.View()
+        selectReview:discord.ui.Select = discord.ui.Select(placeholder="Select a review", options=options)
+        self.select = selectReview
+        selectReview.callback = self.selectReview
+        selectReviewUI.add_item(selectReview)
+
+        await interaction.response.send_message(embed=embed, view=selectReviewUI)
     
     def changeUser(self, user:discord.Member):
         self.user = user
