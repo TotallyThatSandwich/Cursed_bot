@@ -40,8 +40,11 @@ class letterboxd(commands.Cog):
         self.getLetterboxd.start()
 
     def getActivityCount(self, user:discord.Member, data:dict) -> int:
-        count = self.letterboxdDetails["users"][str(user.id)]["activity"].index(data)
-        print(f"activity count:", count)
+        try:
+            count = self.letterboxdDetails["users"][str(user.id)]["activity"].index(data)
+            print(f"activity count:", count)
+        except:
+            count = -1
         return count
 
     def formatReview(review:str) -> str:
@@ -290,6 +293,9 @@ class letterboxdFilmWatchUI(discord.ui.View):
         self.interaction:discord.Interaction = interaction
 
         userActivity = self.letterboxd.letterboxdDetails["users"][str(user.id)]["activity"]
+        if self.count == -1:
+            self.previous.disabled = True
+            self.next.disabled = True
         if self.count + 1 == len(userActivity):
             self.next.disabled = True
         if self.count - 1 == -1:
