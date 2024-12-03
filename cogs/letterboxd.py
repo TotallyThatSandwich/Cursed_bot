@@ -53,18 +53,22 @@ class letterboxd(commands.Cog):
             count = -1
         return count
 
-    async def fetchFromLetterboxd(self, user:discord.Member = None, letterboxdUser=None, amount=1) -> list:
+    async def fetchFromLetterboxd(self, user:discord.Member = None, letterboxdUser=None, amount=1, patron:bool=False) -> list:
         """
         Fetches ``amount`` of films for a ``user``'s discord id or ``letterboxdUser`` username
         """
+
+
         if user != None:
+            if self.letterboxdDetails['users'][str(user.id)]["patron"] == None:
+                self.letterboxdDetails['users'][str(user.id)]["patron"] = False
             try:
                 user = self.letterboxdDetails["users"][str(user.id)]["username"]
-                url = f"{letterboxdURL}/{user}?amount={amount}"
+                url = f"{letterboxdURL}/{user}?amount={amount}&patron={int(self.letterboxdDetails['users'][str(user.id)]['patron'])}"
             except KeyError:
                 return None
         elif letterboxdUser != None:
-            url = f"{letterboxdURL}/{letterboxdUser}?amount={amount}"
+            url = f"{letterboxdURL}/{letterboxdUser}?amount={amount}&patron={int(patron)}"
         else:
             raise ValueError("Either a user or a letterboxd username must be provided")
             return None
@@ -84,13 +88,14 @@ class letterboxd(commands.Cog):
         """
         Returns a ``discord.Embed`` object using the data acquired from the API.
         """
+        print("\ncreating review embed with", data)
         if type(user) != discord.Member and type(user) != discord.User:
             user = self.fetchMemberFromId(int(user)) # Fetches user object from discord id
 
-        if data["film"] in self.letterboxdDetails["films"].keys():
-            self.letterboxdDetails["films"][data["film"]].update({str(user.id): data})
+        if data["film"]["title"] in self.letterboxdDetails["films"].keys():
+            self.letterboxdDetails["films"][data["film"]["title"]].update({str(user.id): data})
         else:
-            self.letterboxdDetails["films"][data["film"]] = {str(user.id): data}
+            self.letterboxdDetails["films"][data["film"]["title"]] = {str(user.id): data}
 
         with open("letterboxd.json", "w") as f:
                 json.dump(self.letterboxdDetails, f, indent=4)
@@ -113,10 +118,26 @@ class letterboxd(commands.Cog):
             self.letterboxdDetails["chat"] = chat.id
             json.dump(self.letterboxdDetails, f, indent=4)
         await interaction.response.send_message(f"Letterboxd channel has been set to {chat.mention}", ephemeral=True)
+    
+    @app_commands.command(name="letterboxd_patron", description="Enable or disable Letterboxd Patron features if you are a patron.")
+    async def letterboxdPatron(self, interaction:discord.Interaction):
+        user = interaction.user
+        if not self.checkIfSignedIn(user):
+            return await interaction.response.send_message("You have not signed in for Letterboxd tracking", ephemeral=True)
 
+        if self.letterboxdDetails["users"][str(user.id)]["patron"]:
+            self.letterboxdDetails["users"][str(user.id)]["patron"] = False
+            await interaction.response.send_message("You have disabled Letterboxd Patron features.", ephemeral=True)
+        else:
+            self.letterboxdDetails["users"][str(user.id)]["patron"] = True
+            await interaction.response.send_message("You have enabled Letterboxd Patron features.", ephemeral=True)
+
+        with open("letterboxd.json", "w") as f:
+            json.dump(self.letterboxdDetails, f, indent=4)
+        
     @app_commands.command(name="letterboxd_login", description="Opt in for Letterboxd tracking. Run this command again to opt out.")
     @app_commands.describe(letterboxdusername= "Your Letterboxd username or your Letterboxd profile URL")
-    async def letterboxdLogin(self, interaction:discord.Interaction, letterboxdusername:str):
+    async def letterboxdLogin(self, interaction:discord.Interaction, letterboxdusername:str, patron:bool=False):
         if str(interaction.user.id) in self.letterboxdDetails["users"]:
             self.letterboxdDetails["users"].pop(str(interaction.user.id))
 
@@ -128,7 +149,6 @@ class letterboxd(commands.Cog):
             if "letterboxd.com" in letterboxdusername:
                 letterboxdusername = letterboxdusername.split(".com/")[1].rstrip("/")
 
-
             try:
                 response = await self.fetchFromLetterboxd(letterboxdUser=letterboxdusername, amount=5)
             except:
@@ -138,6 +158,7 @@ class letterboxd(commands.Cog):
             
             self.letterboxdDetails["users"][interaction.user.id] = {
                 "username": letterboxdusername,
+                "patron": patron,
                 "discord username": interaction.user.display_name,
                 "activity": response,
                 "favourites": []
@@ -179,22 +200,6 @@ class letterboxd(commands.Cog):
 
         interaction.response.send_message("Favourites have been fetched!", ephemeral=True)
 
-    @app_commands.command(name="letterboxd_add_favourite", description="Add your top 4.")
-    @app_commands.describe(tmdbId="Optional. Will collect information about the movie.")
-    async def addFavourite(self, interaction:discord.Interaction, tmdbId:int = None, film:str = None):
-        userId = str(interaction.user.id)
-        if len(self.letterboxdDetails["users"][userId]["favourites"]) == 4:
-            return await interaction.response.send_message("You already have 4 favourites. Please remove one before adding another.", ephemeral=True)
-        
-        if userId in list(self.letterboxdDetails["films"][film].keys()):
-            review = self.letterboxdDetails["films"][film][userId]
-            self.letterboxdDetails["users"][userId]["favourites"].append(review)
-            return await interaction.response.send_message(f"Successfully added {film} with your review attached to your favourites!", ephemeral=True)
-        else:
-            if tmdbId == None:
-                return await interaction.response.send_message(f"Not enough information in your account. Please log a review of the film or input TMDB id.")
-            return await interaction.response.send_message("Currently WIP, this function has not been added yet.")
-
 
     @app_commands.command(name="letterboxd_upload_profile", description="Upload profile data exported from Letterboxd.")
     async def uploadProfileData(self, interaction:discord.Interaction, attachment:discord.Attachment):
@@ -211,7 +216,6 @@ class letterboxd(commands.Cog):
         else:
             return interaction.response.send_message("Error parsing attachment, please try again later.", ephemeral=True)
         pass
-
 
     @app_commands.command(name="letterboxd_fetch_last", description="Fetch the latest Letterboxd activity")
     async def fetchLatestLetterBoxd(self, interaction:discord.Interaction, user:discord.Member=None):
@@ -261,7 +265,11 @@ class letterboxd(commands.Cog):
         for user in self.letterboxdDetails["users"]:
             print(f"checking for activity from {user}")
             username = self.letterboxdDetails["users"][user]["username"]
-
+            try:
+                self.letterboxdDetails["users"][user]["patron"] == None
+            except KeyError:
+                self.letterboxdDetails["users"][user]["patron"] = False
+            patron = self.letterboxdDetails["users"][user]["patron"]
 
             try:
                 discordUsername = self.bot.get_user(int(user)).display_name
@@ -270,13 +278,18 @@ class letterboxd(commands.Cog):
         
             self.letterboxdDetails["users"][user].update({"discord username": discordUsername})
 
-            response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=5)
+            response = await self.fetchFromLetterboxd(letterboxdUser=username, amount=5, patron=patron)
             if response == None:
                 return logger.error(f"Error fetching data for {user}")
 
             for filmCount in range(len(response)):
                 print(f"\nchecking if {response[filmCount]} is in {user}'s activity")
-                if not (response[filmCount] in self.letterboxdDetails["users"][user]["activity"]):
+
+                memberReviews = []
+                for activity in self.letterboxdDetails["users"][user]["activity"]:
+                    memberReviews.append(activity["member"])
+
+                if not (response[filmCount]["member"] in memberReviews):
                     print("Not in activity, sending message\n")
                     member = await self.bot.fetch_user(user)
                     try:
@@ -284,8 +297,8 @@ class letterboxd(commands.Cog):
                         channel = self.bot.get_channel(int(self.letterboxdDetails["chat"]))
                         await channel.send(embed=embed, view=ui)
                     except Exception as e:
-                        logger.error(e)
-                        return
+                        raise e
+                    
 
                     self.letterboxdDetails["users"][user]["activity"].insert(filmCount, response[filmCount])
                     if len(self.letterboxdDetails["users"][user]["activity"]) > 5:
@@ -338,7 +351,7 @@ class letterboxdFilmWatchUI(discord.ui.View):
             self.previous.disabled = True
         
         self.film = userActivity[self.count]
-        self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["film"]]
+        self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["film"]["title"]]
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
     async def previous(self, interaction:discord.Interaction, button:discord.ui.Button, ):
@@ -369,9 +382,9 @@ class letterboxdFilmWatchUI(discord.ui.View):
         film = self.film
         reviews = self.reviews
 
-        embed = discord.Embed(title=f"{film['film']}", colour=discord.Colour.blurple(), url=film["link"])
-        embed.set_thumbnail(url=self.film["images"]["poster"])
-        embed.set_image(url=self.film["images"]["backdrop"])
+        embed = discord.Embed(title=f"{film['film']["title"]}", colour=discord.Colour.blurple(), url=film["film"]["link"])
+        embed.set_thumbnail(url=self.film["film"]["images"]["poster"])
+        embed.set_image(url=self.film["film"]["images"]["backdrop"])
         options = []
 
         for i in range(len(reviews)):
@@ -410,7 +423,7 @@ class letterboxdActivityEmbed(discord.Embed):
     def buildDescription(self) -> str:
         description = ""
         for film in self.activity:
-            description += f"[{film['film']}]({film['link']}) - {self.letterboxd.ratingEmojis(film['member']['rating'])} \n"
+            description += f"[{film['film']["title"]}]({film["member"]['link']}) - {self.letterboxd.ratingEmojis(film['member']['rating'])} \n"
         return description
 
 class letterboxdFilmEmbed(discord.Embed):
@@ -462,13 +475,13 @@ class letterboxdFilmEmbed(discord.Embed):
 
     def buildFromResponse(self, data:dict, user:discord.Member):
         print(f"building from {data}")
-        self.title = data["film"]
-        self.url = data["link"]
+        self.title = data["film"]["title"]
+        self.url = data["member"]["link"]
         self.rating = float(data["member"]["rating"])
         self.review = data["member"]["review"]
-        self.poster = data["images"]["poster"]
-        self.backdrop = data["images"]["backdrop"] 
-        self.watchDate = data["member"]["watched date"]
+        self.poster = data["film"]["images"]["poster"]
+        self.backdrop = data["film"]["images"]["backdrop"] 
+        self.watchDate = data["member"]["watchdate"]
         
         if "This review may contain spoilers." in self.review:
             self.spoiler = True

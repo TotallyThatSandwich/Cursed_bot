@@ -175,3 +175,4 @@ cython_debug/
 /blacklist.txt
 /optoutlist.txt
 /dexter.txt
+/update.sh
