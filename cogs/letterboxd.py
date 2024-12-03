@@ -117,7 +117,7 @@ class letterboxd(commands.Cog):
         with open("letterboxd.json", "w") as f:
             self.letterboxdDetails["chat"] = chat.id
             json.dump(self.letterboxdDetails, f, indent=4)
-        await interaction.response.send_message(f"Letterboxd channel has been set to {chat.mention}", ephemeral=True)
+        return await interaction.response.send_message(f"Letterboxd channel has been set to {chat.mention}", ephemeral=True)
     
     @app_commands.command(name="letterboxd_patron", description="Enable or disable Letterboxd Patron features if you are a patron.")
     async def letterboxdPatron(self, interaction:discord.Interaction):
@@ -138,23 +138,24 @@ class letterboxd(commands.Cog):
     @app_commands.command(name="letterboxd_login", description="Opt in for Letterboxd tracking. Run this command again to opt out.")
     @app_commands.describe(letterboxdusername= "Your Letterboxd username or your Letterboxd profile URL")
     async def letterboxdLogin(self, interaction:discord.Interaction, letterboxdusername:str, patron:bool=False):
+        await interaction.response.defer()
         if str(interaction.user.id) in self.letterboxdDetails["users"]:
             self.letterboxdDetails["users"].pop(str(interaction.user.id))
 
             with open("letterboxd.json", "w") as f:
                 json.dump(self.letterboxdDetails, f, indent=4)
 
-            await interaction.response.send_message("You have opted out of Letterboxd tracking.", ephemeral=True)
+            return await interaction.followup.send("You have opted out of Letterboxd tracking.", ephemeral=True)
         else:
             if "letterboxd.com" in letterboxdusername:
                 letterboxdusername = letterboxdusername.split(".com/")[1].rstrip("/")
 
             try:
                 response = await self.fetchFromLetterboxd(letterboxdUser=letterboxdusername, amount=5)
-            except:
-                logger.error(f"Error fetching data for {letterboxdusername}")
-                await interaction.response.send_message("There was an error fetching data. Please try again some other time.", ephemeral=True)
-                raise ValueError(f"Error fetching data for {letterboxdusername}")
+            except Exception as e:
+                logger.error(f"Error fetching data for {letterboxdusername}: {e}")
+                return await interaction.followup.send("There was an error fetching data. Please try again some other time.", ephemeral=True)
+                
             
             self.letterboxdDetails["users"][interaction.user.id] = {
                 "username": letterboxdusername,
@@ -167,7 +168,7 @@ class letterboxd(commands.Cog):
             with open("letterboxd.json", "w") as f:
                 json.dump(self.letterboxdDetails, f, indent=4)
 
-            await interaction.response.send_message("You have opted in for Letterboxd tracking.", ephemeral=True)
+            return await interaction.followup.send("You have opted in for Letterboxd tracking.", ephemeral=True)
 
     #@app_commands.command(name="fetch_favourites", description="Fetch the user's favourite films")
     async def fetchFavourites(self, interaction:discord.Interaction, user:discord.Member=None):
