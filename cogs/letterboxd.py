@@ -157,7 +157,7 @@ class letterboxd(commands.Cog):
                 return await interaction.followup.send("There was an error fetching data. Please try again some other time.", ephemeral=True)
                 
             
-            self.letterboxdDetails["users"][interaction.user.id] = {
+            self.letterboxdDetails["users"][str(interaction.user.id)] = {
                 "username": letterboxdusername,
                 "patron": patron,
                 "discord username": interaction.user.display_name,
