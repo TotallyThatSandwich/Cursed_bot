@@ -7,6 +7,9 @@ import sys
 import json
 import requests
 
+import csv
+from zipfile import ZipFile
+
 from math import floor
 
 from dateutil import tz
@@ -39,6 +42,9 @@ class letterboxd(commands.Cog):
         
         self.getLetterboxd.start()
 
+    def fetchFromTMDBid(self, tmdbId:int):
+        pass
+
     def getActivityCount(self, user:discord.Member, data:dict) -> int:
         try:
             count = self.letterboxdDetails["users"][str(user.id)]["activity"].index(data)
@@ -46,10 +52,6 @@ class letterboxd(commands.Cog):
         except:
             count = -1
         return count
-
-    def formatReview(review:str) -> str:
-        review.replace("&amp;", "&")
-
 
     async def fetchFromLetterboxd(self, user:discord.Member = None, letterboxdUser=None, amount=1) -> list:
         """
@@ -177,7 +179,41 @@ class letterboxd(commands.Cog):
 
         interaction.response.send_message("Favourites have been fetched!", ephemeral=True)
 
-    @app_commands.command(name="fetch_latest_letterboxd", description="Fetch the latest Letterboxd activity")
+    @app_commands.command(name="letterboxd_add_favourite", description="Add your top 4.")
+    @app_commands.describe(tmdbId="Optional. Will collect information about the movie.")
+    async def addFavourite(self, interaction:discord.Interaction, tmdbId:int = None, film:str = None):
+        userId = str(interaction.user.id)
+        if len(self.letterboxdDetails["users"][userId]["favourites"]) == 4:
+            return await interaction.response.send_message("You already have 4 favourites. Please remove one before adding another.", ephemeral=True)
+        
+        if userId in list(self.letterboxdDetails["films"][film].keys()):
+            review = self.letterboxdDetails["films"][film][userId]
+            self.letterboxdDetails["users"][userId]["favourites"].append(review)
+            return await interaction.response.send_message(f"Successfully added {film} with your review attached to your favourites!", ephemeral=True)
+        else:
+            if tmdbId == None:
+                return await interaction.response.send_message(f"Not enough information in your account. Please log a review of the film or input TMDB id.")
+            return await interaction.response.send_message("Currently WIP, this function has not been added yet.")
+
+
+    @app_commands.command(name="letterboxd_upload_profile", description="Upload profile data exported from Letterboxd.")
+    async def uploadProfileData(self, interaction:discord.Interaction, attachment:discord.Attachment):
+        await interaction.response.defer()
+        if attachment.content_type == "zip":
+            with ZipFile(attachment.filename, 'r') as zip:
+                zip.extractall()
+            
+            for file in os.listdir():
+                if ".csv" in file:
+                    
+                    with open(file) as csvFile:
+                        csvFile = csv.reader(file, delimiter=' ')
+        else:
+            return interaction.response.send_message("Error parsing attachment, please try again later.", ephemeral=True)
+        pass
+
+
+    @app_commands.command(name="letterboxd_fetch_last", description="Fetch the latest Letterboxd activity")
     async def fetchLatestLetterBoxd(self, interaction:discord.Interaction, user:discord.Member=None):
         if user == None:
             user = interaction.user
@@ -448,6 +484,11 @@ class letterboxdFilmEmbed(discord.Embed):
             self.colour = discord.Colour.green()
         else:
             self.colour = discord.Colour.gold()
+
+class profileEmbed(discord.Embed):
+    def __init__(self, colour = None, type = 'rich', url = None, description = None, ):
+        super().__init__(colour=colour, type=type, url=url, description=description)
+
 
 
 async def setup(bot):
