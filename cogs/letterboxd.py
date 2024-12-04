@@ -108,10 +108,10 @@ class letterboxd(commands.Cog):
         """Creates a tuple containing a discord.Embed and a discord.ui.View object for a film's details.
 
         Args:
-            filmDetails (dict): _description_
+            filmDetails (dict): A dictionary directly from the API containing the film's details.
 
         Returns:
-            tuple[discord.Embed, discord.ui.View]: _description_
+            tuple[discord.Embed, discord.ui.View]: A tuple containing a discord.Embed and a discord.ui.View object.
         """
         options = self.getAllReviews(filmName=filmDetails["title"])
         ui = discord.ui.View()
@@ -119,7 +119,34 @@ class letterboxd(commands.Cog):
         ui.add_item(select)
         return letterboxdFilmDetailsEmbed(filmDetails=filmDetails, letterboxd=self), ui
 
-   
+    @app_commands.command(name="letterboxd_admin_clear")
+    async def clearAllActivities(self, interaction:discord.Interaction):
+        user = interaction.user
+        for role in user.roles:
+            if role.permissions.manage_channels or role.permissions.administrator:
+                break
+        else:
+            return await interaction.response.send_message("You do not have the required permissions to run this command", ephemeral=True)
+        
+        for user in self.letterboxdDetails["users"]:
+            self.letterboxdDetails["users"][user]["activity"] = []
+        with open("letterboxd.json", "w") as f:
+            json.dump(self.letterboxdDetails, f, indent=4)
+        
+        return await interaction.response.send_message("All activities have been cleared.", ephemeral=True)
+
+    @app_commands.command(name="letterboxd_clear_acitivties")
+    async def clearActivities(self, interaction:discord.Interaction):
+        user = interaction.user
+        if not self.checkIfSignedIn(user):
+            return await interaction.response.send_message("User have not signed in for Letterboxd tracking", ephemeral=True)
+        
+        self.letterboxdDetails["users"][str(user.id)]["activity"] = []
+        with open("letterboxd.json", "w") as f:
+            json.dump(self.letterboxdDetails, f, indent=4)
+        
+        return await interaction.response.send_message("Activities have been cleared.", ephemeral=True)
+
     @app_commands.command(name="letterboxd_setup", description="Set up the Letterboxd channel for the bot to post in")
     async def letterboxdSetup(self, interaction:discord.Interaction, chat:discord.TextChannel):
         for role in interaction.user.roles:

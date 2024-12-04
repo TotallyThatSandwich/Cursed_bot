@@ -33,7 +33,6 @@ async def on_ready():
 
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
-
 @bot.command()
 @commands.check(is_admin)
 async def reload(ctx, cog: str):
