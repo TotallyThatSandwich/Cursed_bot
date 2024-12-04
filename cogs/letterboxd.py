@@ -105,8 +105,13 @@ class letterboxd(commands.Cog):
         return letterboxdFilmEmbed(data=data, author=user, letterboxd=self), None
     
     def createFilmDetailsEmbed(self, filmDetails:dict) -> tuple[discord.Embed, discord.ui.View]:
-        """
-        Creates a tuple containing a ``discord.Embed`` using the data from the API alongside a select menu to view reviews.
+        """Creates a tuple containing a discord.Embed and a discord.ui.View object for a film's details.
+
+        Args:
+            filmDetails (dict): _description_
+
+        Returns:
+            tuple[discord.Embed, discord.ui.View]: _description_
         """
         options = self.getAllReviews(filmName=filmDetails["title"])
         ui = discord.ui.View()
@@ -286,12 +291,14 @@ class letterboxd(commands.Cog):
                 return logger.error(f"Error fetching data for {user}")
 
             for filmCount in range(len(response)):
-                memberReviews = []
                 for activity in self.letterboxdDetails["users"][user]["activity"]:
-                    memberReviews.append(activity["member"])
-
-                if not (response[filmCount]["member"] in memberReviews):
-                    print(f"{response[filmCount]['member']} Not in activity, sending message\n")
+                    isSame = response[filmCount]["film"]["title"] == activity["film"]["title"]
+                    if isSame:
+                        print("\n")
+                        # If the user already has the film in their activity
+                        break
+                else:
+                    print(f"{response[filmCount]['member']} not in activity, sending message\n")
                     member = await self.bot.fetch_user(user)
                     try:
                         embed, ui = self.createReviewEmbed(data=response[filmCount], user=member)
@@ -316,6 +323,9 @@ class letterboxd(commands.Cog):
                 response = response.json()
         
     def getAllReviews(self, reviews=None, filmName=None) -> list[discord.SelectOption]:
+        """
+        
+        """
         if reviews == None:
             if filmName == None:
                 return None
@@ -331,6 +341,7 @@ class letterboxd(commands.Cog):
     def checkIfSignedIn(self, user:discord.Member) -> bool:
         """
         Checks if a user of type ``discord.Member`` is signed in for Letterboxd tracking.
+        
         """
         print(f"checking for {str(user.id)} in {list(self.letterboxdDetails['users'].keys())}")
         keys = list(self.letterboxdDetails["users"].keys())
@@ -400,6 +411,7 @@ class letterboxdFilmWatchUI(discord.ui.View):
     def changeUser(self, user:discord.Member):
         self.user = user
 
+# UI elements
 class letterboxdSelectReview(discord.ui.Select):
     def __init__(self, letterboxd:letterboxd, options:list, filmName:str):
         super().__init__(placeholder="Select a review", options=options)
@@ -431,8 +443,6 @@ class letterboxdFilmDetailsEmbed(discord.Embed):
         self.set_thumbnail(url=filmDetails["images"]["poster"])
         self.set_image(url=filmDetails["images"]["backdrop"])
         self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
-
-
 
 class letterboxdActivityEmbed(discord.Embed):
     def __init__(self, title = None, type = 'rich', url=None, timestamp = None, activity:list = None, user:discord.Member = None, letterboxd:letterboxd = None):
