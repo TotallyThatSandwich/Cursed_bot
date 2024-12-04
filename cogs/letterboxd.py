@@ -45,7 +45,35 @@ class letterboxd(commands.Cog):
     def fetchFromTMDBid(self, tmdbId:int):
         pass
 
+    def sortReviewsByDate(self, reviews:list)->list:
+        for i in range(len(reviews)):
+            try:
+                dateI = reviews[i]["member"]["watchdate"].split("/")
+                dateI = datetime(year=int(dateI[2]), month=int(dateI[1]), day=int(dateI[0]))
+            except:
+                print("No date found for review, continuing...")
+                continue
+            for k in range(len(reviews)):
+                try:
+                    dateK = reviews[k]["member"]["watchdate"].split("/")
+                    dateK = datetime(year=int(dateK[2]), month=int(dateK[1]), day=int(dateK[0]))
+                except:
+                    print("No date found for review, continuing...")
+                    continue
+                if dateI < dateK:
+                    reviews[i], reviews[k] = reviews[k], reviews[i]
+        return reviews
+    
     def getActivityCount(self, user:discord.Member, data:dict) -> int:
+        """Fetches the index of a film in a user's activity list.
+
+        Args:
+            user (discord.Member): discord.Member object
+            data (dict): review data from the API
+
+        Returns:
+            int: ``-1`` if the film is not in the user's activity list, otherwise the index of the film in the user's activity list.
+        """
         try:
             count = self.letterboxdDetails["users"][str(user.id)]["activity"].index(data)
             print(f"activity count:", count)
@@ -63,7 +91,7 @@ class letterboxd(commands.Cog):
                 self.letterboxdDetails['users'][str(user.id)]["patron"] = False
             try:
                 user = self.letterboxdDetails["users"][str(user.id)]["username"]
-                url = f"{letterboxdURL}/{user}?amount={amount}&patron={int(self.letterboxdDetails['users'][str(user.id)]['patron'])}"
+                url = f"{letterboxdURL}/{user}?amount={amount}&patron={int(self.letterboxdDetails['users'][user]['patron'])}"
             except KeyError:
                 return None
         elif letterboxdUser != None:
@@ -82,6 +110,40 @@ class letterboxd(commands.Cog):
     async def fetchMemberFromId(self, userID:int) -> discord.Member:
         user = await self.bot.fetch_user(userID)
         return user
+    
+    def addReviewToFilm(self, data:dict, user:discord.Member, userId:int = None):
+        if userId == None:
+            userId = user.id
+        userId:str = str(userId)
+
+        if data["film"]["title"] not in self.letterboxdDetails["films"]:
+            self.letterboxdDetails["films"].update({data["film"]["title"]: {}})
+            self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
+        else:
+            if userId not in self.letterboxdDetails["films"][data["film"]["title"]]:
+                self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
+            elif userId in self.letterboxdDetails["films"][data["film"]["title"]] and data not in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
+                self.letterboxdDetails["films"][data["film"]["title"]][userId].append(data)
+                
+                try:
+                    watchdate = data["member"]["watchdate"].split('/')
+                    watchdate = datetime(year=int(watchdate[2]), month=int(watchdate[1]), day=int(watchdate[0]))
+                except Exception as e:
+                    print("No watchdate found for review.")
+                    return
+
+                for i in range(len(self.letterboxdDetails["films"][data["film"]["title"]][userId])):
+                    date = self.letterboxdDetails["films"][data["film"]["title"]][userId][i]["member"]["watchdate"].split('/')
+                    date = datetime(year=int(date[2]), month=int(date[1]), day=int(date[0]))
+                    if watchdate < date:
+                        self.letterboxdDetails["films"][data["film"]["title"]][userId].insert(i, data)
+                        break
+                
+
+            else:
+                print(f"Review already exists in {data['film']['title']} for {user.display_name}")
+                return None
+        
 
     # Embed creation
     def createReviewEmbed(self, data:dict, user, interaction:discord.Interaction=None):
@@ -91,11 +153,6 @@ class letterboxd(commands.Cog):
         print("\ncreating review embed with", data)
         if type(user) != discord.Member and type(user) != discord.User:
             user = self.fetchMemberFromId(int(user)) # Fetches user object from discord id
-
-        if data["film"]["title"] in self.letterboxdDetails["films"].keys():
-            self.letterboxdDetails["films"][data["film"]["title"]].update({str(user.id): data})
-        else:
-            self.letterboxdDetails["films"][data["film"]["title"]] = {str(user.id): data}
 
         with open("letterboxd.json", "w") as f:
                 json.dump(self.letterboxdDetails, f, indent=4)
@@ -234,7 +291,6 @@ class letterboxd(commands.Cog):
 
         return await interaction.followup.send("Favourites have been updated!", ephemeral=True)
 
-
     @app_commands.command(name="letterboxd_upload_profile", description="Upload profile data exported from Letterboxd.")
     async def uploadProfileData(self, interaction:discord.Interaction, attachment:discord.Attachment):
         await interaction.response.defer()
@@ -281,19 +337,25 @@ class letterboxd(commands.Cog):
 
     @app_commands.command(name="update_letterboxd_activity", description="Fetch the latest Letterboxd activity")
     async def updateLetterBoxdActivity(self, interaction:discord.Interaction):
-        user = interaction.user
+        await interaction.response.defer()
+        user:discord.Member = interaction.user
         if not self.checkIfSignedIn(user):
-            return await interaction.response.send_message("User have not signed in for Letterboxd tracking", ephemeral=True)
+            return await interaction.followup.send("User have not signed in for Letterboxd tracking", ephemeral=True)
         
-        response = await self.fetchFromLetterboxd(user=user, amount=5)
-        if response == None:
-            return await interaction.response.send_message("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
+        try:
+            response = await self.fetchFromLetterboxd(letterboxdUser=self.letterboxdDetails["users"][str(user.id)]["username"], amount=5, patron=self.letterboxdDetails["users"][str(user.id)]["patron"])
+        except Exception as e:
+            await interaction.followup.send("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
+            raise e
+
+        for i in range(len(response)):
+            self.addReviewToFilm(data=response[i], user=user)
         
         self.letterboxdDetails["users"][str(user.id)]["activity"] = response
         with open("letterboxd.json", "w") as f:
             json.dump(self.letterboxdDetails, f, indent=4)
 
-        await interaction.response.send_message("Activity has been updated!", ephemeral=True)
+        await interaction.followup.send("Activity has been updated!", ephemeral=True)
         
     @tasks.loop(hours=1)
     async def getLetterboxd(self):
@@ -328,6 +390,7 @@ class letterboxd(commands.Cog):
                     print(f"{response[filmCount]['member']} not in activity, sending message\n")
                     member = await self.bot.fetch_user(user)
                     try:
+                        self.addReviewToFilm(data=response[filmCount], user=member)
                         embed, ui = self.createReviewEmbed(data=response[filmCount], user=member)
                         channel = self.bot.get_channel(int(self.letterboxdDetails["chat"]))
                         await channel.send(embed=embed, view=ui)
@@ -351,16 +414,17 @@ class letterboxd(commands.Cog):
         
     def getAllReviews(self, reviews=None, filmName=None) -> list[discord.SelectOption]:
         """
-        
+        Fetches newest reviews for a film from the API and returns a list of ``discord.SelectOption`` objects.
         """
         if reviews == None:
             if filmName == None:
                 return None
             reviews = self.letterboxdDetails["films"][filmName]
+
         formattedReviews = []
         for i in range(len(reviews)):
             userId = list(reviews.keys())[i]
-            review = reviews[userId] # fetches user's review
+            review = reviews[userId][0] # fetches user's review
             user = self.letterboxdDetails["users"][list(reviews.keys())[i]]["discord username"]
             formattedReviews.append(discord.SelectOption(label=user, value=str(userId), description=f"{self.ratingEmojis(rating=float(review['member']['rating']))}"))
         return formattedReviews
@@ -449,7 +513,7 @@ class letterboxdSelectReview(discord.ui.Select):
     async def callback(self, interaction:discord.Interaction, select:discord.ui.Select=None):
         select = self.select
         print("selected review:", select.values[0])
-        review = self.letterboxd.letterboxdDetails["films"][self.filmName][select.values[0]]
+        review = self.letterboxd.letterboxdDetails["films"][self.filmName][select.values[0]][0]
         user = await self.letterboxd.fetchMemberFromId(int(select.values[0]))
         embed, view = self.letterboxd.createReviewEmbed(data=review, user=user, interaction=interaction)
         await interaction.response.edit_message(embed=embed, view=view)
