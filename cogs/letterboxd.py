@@ -53,12 +53,11 @@ class letterboxd(commands.Cog):
             count = -1
         return count
 
-    async def fetchFromLetterboxd(self, user:discord.Member = None, letterboxdUser=None, amount=1, patron:bool=False) -> list:
+    async def fetchFromLetterboxd(self, user:discord.Member = None, letterboxdUser=None, amount=1, patron:bool=False, type:str="films",) -> list:
         """
         Fetches ``amount`` of films for a ``user``'s discord id or ``letterboxdUser`` username
         """
-
-
+        
         if user != None:
             if self.letterboxdDetails['users'][str(user.id)]["patron"] == None:
                 self.letterboxdDetails['users'][str(user.id)]["patron"] = False
@@ -78,12 +77,13 @@ class letterboxd(commands.Cog):
         response = requests.get(url=url)
         response = response.json()
 
-        return response["films"]
+        return response[type]
     
     async def fetchMemberFromId(self, userID:int) -> discord.Member:
         user = await self.bot.fetch_user(userID)
         return user
 
+    # Embed creation
     def createReviewEmbed(self, data:dict, user, interaction:discord.Interaction=None):
         """
         Returns a ``discord.Embed`` object using the data acquired from the API.
@@ -103,6 +103,16 @@ class letterboxd(commands.Cog):
         if interaction != None:
             return letterboxdFilmEmbed(data=data, author=user, letterboxd=self), letterboxdFilmWatchUI(self, user, self.getActivityCount(user, data), interaction)
         return letterboxdFilmEmbed(data=data, author=user, letterboxd=self), None
+    
+    def createFilmDetailsEmbed(self, filmDetails:dict) -> tuple[discord.Embed, discord.ui.View]:
+        """
+        Creates a tuple containing a ``discord.Embed`` using the data from the API alongside a select menu to view reviews.
+        """
+        options = self.getAllReviews(filmName=filmDetails["title"])
+        ui = discord.ui.View()
+        select = letterboxdSelectReview(self, options=options, filmName=filmDetails["title"])
+        ui.add_item(select)
+        return letterboxdFilmDetailsEmbed(filmDetails=filmDetails, letterboxd=self), ui
 
    
     @app_commands.command(name="letterboxd_setup", description="Set up the Letterboxd channel for the bot to post in")
@@ -170,36 +180,27 @@ class letterboxd(commands.Cog):
 
             return await interaction.followup.send("You have opted in for Letterboxd tracking.", ephemeral=True)
 
-    #@app_commands.command(name="fetch_favourites", description="Fetch the user's favourite films")
-    async def fetchFavourites(self, interaction:discord.Interaction, user:discord.Member=None):
-        if user == None:
-            user = interaction.user
+    @app_commands.command(name="letterboxd_update_favourites", description="Fetch the user's favourite films")
+    async def fetchFavourites(self, interaction:discord.Interaction):
+        await interaction.response.defer()
+        user = interaction.user
 
         if not self.checkIfSignedIn(user):
             return await interaction.response.send_message("The user is not signed in for Letterboxd tracking", ephemeral=True)
 
-        response = self.letterboxdDetails["users"][str(user.id)]["favourites"]
-        if response == None:
-            return await interaction.response.send_message("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
-        
-        response = requests.get(url=f"letterboxd.com/{user}")
-        response = BeautifulSoup(response.content, "html.parser")
-        
-        favourites = []
-        for film in response.find_all("li", attrs={"data-object-name": "favorite film"}):
-            filmName = film.find("div", {"data-film-name": True})["data-film-name"]
-            
-            filmLink = film.find("a", {"href": True})["href"]
-            filmLink = f"https://letterboxd.com{filmLink}"
-
-            response = requests.get(filmLink)
-            response = BeautifulSoup(response.content, "html.parser")
-            
-            tmdbID = response.find("body", {"data-tmdb-id": True})["data-tmdb-id"]
-            response = requests.get(f"{letterboxdURL}/film/{tmdbID}")
+        url = f"{letterboxdURL}/favourites/{self.letterboxdDetails['users'][str(user.id)]['username']}"
+        response = requests.get(url=url)
+        try:
             response = response.json()
+        except Exception as e:
+            print(e)
+            return await interaction.followup.send("Error fetching data. Please try again later.", ephemeral=True)
+        
+        self.letterboxdDetails["users"][str(user.id)]["favourites"] = response
+        with open("letterboxd.json", "w") as f:
+            json.dump(self.letterboxdDetails, f, indent=4)
 
-        interaction.response.send_message("Favourites have been fetched!", ephemeral=True)
+        return await interaction.followup.send("Favourites have been updated!", ephemeral=True)
 
 
     @app_commands.command(name="letterboxd_upload_profile", description="Upload profile data exported from Letterboxd.")
@@ -220,18 +221,19 @@ class letterboxd(commands.Cog):
 
     @app_commands.command(name="letterboxd_fetch_last", description="Fetch the latest Letterboxd activity")
     async def fetchLatestLetterBoxd(self, interaction:discord.Interaction, user:discord.Member=None):
+        await interaction.response.defer()
         if user == None:
             user = interaction.user
             
         if not self.checkIfSignedIn(user):
-            return await interaction.response.send_message("You have not signed in for Letterboxd tracking", ephemeral=True)
+            return await interaction.followup.send("You have not signed in for Letterboxd tracking", ephemeral=True)
 
         response = self.letterboxdDetails["users"][str(user.id)]["activity"]
         if response == None:
-            return await interaction.response.send_message("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
+            return await interaction.followup.send("There was an error fetching data. Has the user logged in with /letterboxd_login?", ephemeral=True)
         
         embed, ui = self.createReviewEmbed(data=response[0], user=user, interaction=interaction)
-        await interaction.response.send_message(embed=embed, view=ui)
+        await interaction.followup.send(embed=embed, view=ui)
 
     @app_commands.command(name="fetch_letterboxd_activity", description="Fetch the latest Letterboxd activity")
     async def fetchLetterBoxdActivity(self, interaction:discord.Interaction, user:discord.Member=None):
@@ -284,14 +286,12 @@ class letterboxd(commands.Cog):
                 return logger.error(f"Error fetching data for {user}")
 
             for filmCount in range(len(response)):
-                print(f"\nchecking if {response[filmCount]} is in {user}'s activity")
-
                 memberReviews = []
                 for activity in self.letterboxdDetails["users"][user]["activity"]:
                     memberReviews.append(activity["member"])
 
                 if not (response[filmCount]["member"] in memberReviews):
-                    print("Not in activity, sending message\n")
+                    print(f"{response[filmCount]['member']} Not in activity, sending message\n")
                     member = await self.bot.fetch_user(user)
                     try:
                         embed, ui = self.createReviewEmbed(data=response[filmCount], user=member)
@@ -315,6 +315,19 @@ class letterboxd(commands.Cog):
                 response = requests.get(url=letterboxdURL)
                 response = response.json()
         
+    def getAllReviews(self, reviews=None, filmName=None) -> list[discord.SelectOption]:
+        if reviews == None:
+            if filmName == None:
+                return None
+            reviews = self.letterboxdDetails["films"][filmName]
+        formattedReviews = []
+        for i in range(len(reviews)):
+            userId = list(reviews.keys())[i]
+            review = reviews[userId] # fetches user's review
+            user = self.letterboxdDetails["users"][list(reviews.keys())[i]]["discord username"]
+            formattedReviews.append(discord.SelectOption(label=user, value=str(userId), description=f"{self.ratingEmojis(rating=float(review['member']['rating']))}"))
+        return formattedReviews
+
     def checkIfSignedIn(self, user:discord.Member) -> bool:
         """
         Checks if a user of type ``discord.Member`` is signed in for Letterboxd tracking.
@@ -351,8 +364,9 @@ class letterboxdFilmWatchUI(discord.ui.View):
         if self.count - 1 == -1:
             self.previous.disabled = True
         
-        self.film = userActivity[self.count]
-        self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["film"]["title"]]
+        self.activity = userActivity[self.count] # activity
+        self.film = self.activity["film"] # film details
+        self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["title"]]
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
     async def previous(self, interaction:discord.Interaction, button:discord.ui.Button, ):
@@ -380,35 +394,46 @@ class letterboxdFilmWatchUI(discord.ui.View):
 
     @discord.ui.button(label="See other reviews", style=discord.ButtonStyle.primary)
     async def seeOtherReviews(self,interaction:discord.Interaction, button:discord.ui.Button):
-        film = self.film
-        reviews = self.reviews
-
-        embed = discord.Embed(title=f"{film['film']["title"]}", colour=discord.Colour.blurple(), url=film["film"]["link"])
-        embed.set_thumbnail(url=self.film["film"]["images"]["poster"])
-        embed.set_image(url=self.film["film"]["images"]["backdrop"])
-        options = []
-
-        for i in range(len(reviews)):
-            userId = list(reviews.keys())[i]
-            review = reviews[userId] # fetches user's review
-            user = self.letterboxd.letterboxdDetails["users"][list(reviews.keys())[i]]["discord username"]
-            if i > 25:
-                pass # WIP: Add pagination
-
-            embed.add_field(name=user, value=self.letterboxd.ratingEmojis(rating=float(review["member"]["rating"])), inline=False)
-            options.append(discord.SelectOption(label=user, value=str(userId), description=f"{self.letterboxd.ratingEmojis(rating=float(review['member']['rating']))}"))
-
-        selectReviewUI = discord.ui.View()
-        selectReview:discord.ui.Select = discord.ui.Select(placeholder="Select a review", options=options)
-        self.select = selectReview
-        selectReview.callback = self.selectReview
-        selectReviewUI.add_item(selectReview)
-
+        embed, selectReviewUI = self.letterboxd.createFilmDetailsEmbed(self.film)
         await interaction.response.send_message(embed=embed, view=selectReviewUI)
     
     def changeUser(self, user:discord.Member):
         self.user = user
+
+class letterboxdSelectReview(discord.ui.Select):
+    def __init__(self, letterboxd:letterboxd, options:list, filmName:str):
+        super().__init__(placeholder="Select a review", options=options)
+        self.letterboxd = letterboxd
+        self.filmName = filmName
+        self.select = self
+
+    async def callback(self, interaction:discord.Interaction, select:discord.ui.Select=None):
+        select = self.select
+        print("selected review:", select.values[0])
+        review = self.letterboxd.letterboxdDetails["films"][self.filmName][select.values[0]]
+        user = await self.letterboxd.fetchMemberFromId(int(select.values[0]))
+        embed, view = self.letterboxd.createReviewEmbed(data=review, user=user, interaction=interaction)
+        await interaction.response.edit_message(embed=embed, view=view)
+    
+
 # Embeds
+class letterboxdFilmDetailsEmbed(discord.Embed):
+    def __init__(self, *, colour = None, type = 'rich', filmDetails:dict, letterboxd:letterboxd):
+        super().__init__(colour=colour, type = type)
+        self.title = filmDetails["title"]
+        self.year = filmDetails["year"]
+        self.url = filmDetails["link"]
+        self.description = filmDetails["description"]
+        self.tmdbId = filmDetails["tmdbId"]
+        self.letterboxd = letterboxd
+        
+        self.set_author(name=filmDetails["director"])
+        self.set_thumbnail(url=filmDetails["images"]["poster"])
+        self.set_image(url=filmDetails["images"]["backdrop"])
+        self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
+
+
+
 class letterboxdActivityEmbed(discord.Embed):
     def __init__(self, title = None, type = 'rich', url=None, timestamp = None, activity:list = None, user:discord.Member = None, letterboxd:letterboxd = None):
         super().__init__(colour=discord.Colour.blurple(), title=title, type=type, url=url, description=None, timestamp=timestamp)
@@ -428,18 +453,13 @@ class letterboxdActivityEmbed(discord.Embed):
         return description
 
 class letterboxdFilmEmbed(discord.Embed):
-    def __init__(self, letterboxd:letterboxd, title = None, type = 'rich', url = None, timestamp = None, rating = None, review = None, watchDate=None, images = [None, None], author:discord.Member = None, data:dict = None, spoiler:bool = False, ):
+    def __init__(self, letterboxd:letterboxd, title = None, type = 'rich', url = None, timestamp = None, author:discord.Member = None, data:dict = None):
         super().__init__(colour=None, title=title, type=type, url=url, description=None, timestamp=timestamp)
 
-        if data != None:
-            self.buildFromResponse(data, author)
-        else:
-            self.rating = float(rating)
-            self.review = review
-            self.poster = images[0]
-            self.backdrop = images[1]
-            self.spoiler = spoiler
-            self.watchDate = watchDate
+        if data == None:
+            raise ValueError("Data must be provided to create a review embed.")
+        self.buildFromResponse(data, author)
+
         self.letterboxd = letterboxd
         self.set_author(name=author.display_name, icon_url=author.display_avatar.url)
 
@@ -479,9 +499,17 @@ class letterboxdFilmEmbed(discord.Embed):
         self.title = data["film"]["title"]
         self.url = data["member"]["link"]
         self.rating = float(data["member"]["rating"])
-        self.review = data["member"]["review"]
-        self.poster = data["film"]["images"]["poster"]
-        self.backdrop = data["film"]["images"]["backdrop"] 
+        try:
+            self.review = data["member"]["review"]
+        except Exception as e:
+            print("No review!")
+            self.review = ""
+        self.poster = data["member"]["images"]["poster"]
+        try:
+            self.backdrop = data["member"]["images"]["backdrop"] 
+        except Exception as e:
+            print("No custom backdrop!")
+            self.backdrop = data["film"]["images"]["backdrop"]
         self.watchDate = data["member"]["watchdate"]
         
         if "This review may contain spoilers." in self.review:
