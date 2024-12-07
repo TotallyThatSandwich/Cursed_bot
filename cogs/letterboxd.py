@@ -571,7 +571,10 @@ class letterboxdFilmEmbed(discord.Embed):
             self.set_image(url=self.backdrop)
         
         if self.rating != None:
+            self.setColour(self.rating)
             self.add_field(name="Rating", value=self.letterboxd.ratingEmojis(self.rating), inline=False)
+        else:
+            self.setColour(discord.Color.blurple())
         
         if self.watchDate != None:
             self.add_field(name="Watched", value=self.watchDate, inline=True)
@@ -594,7 +597,7 @@ class letterboxdFilmEmbed(discord.Embed):
                     self.add_field(name ="", value=paragraphs[i], inline=False)
 
         self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
-        self.setColour(self.rating)
+        
 
     def buildFromResponse(self, data:dict, user:discord.Member):
         print(f"building from {data}")
