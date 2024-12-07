@@ -119,30 +119,30 @@ class letterboxd(commands.Cog):
         if data["film"]["title"] not in self.letterboxdDetails["films"]:
             self.letterboxdDetails["films"].update({data["film"]["title"]: {}})
             self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
+            return None
+        
+        if userId not in self.letterboxdDetails["films"][data["film"]["title"]]:
+            self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
+        elif userId in self.letterboxdDetails["films"][data["film"]["title"]] and data not in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
+            self.letterboxdDetails["films"][data["film"]["title"]][userId].append(data)
+            
+            try:
+                watchdate = data["member"]["watchdate"].split('/')
+                watchdate = datetime(year=int(watchdate[2]), month=int(watchdate[1]), day=int(watchdate[0]))
+            except Exception as e:
+                print("No watchdate found for review.")
+                return
+
+            for i in range(len(self.letterboxdDetails["films"][data["film"]["title"]][userId])):
+                date = self.letterboxdDetails["films"][data["film"]["title"]][userId][i]["member"]["watchdate"].split('/')
+                date = datetime(year=int(date[2]), month=int(date[1]), day=int(date[0]))
+                if watchdate < date:
+                    self.letterboxdDetails["films"][data["film"]["title"]][userId].insert(i, data)
+                    break
+
         else:
-            if userId not in self.letterboxdDetails["films"][data["film"]["title"]]:
-                self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
-            elif userId in self.letterboxdDetails["films"][data["film"]["title"]] and data not in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
-                self.letterboxdDetails["films"][data["film"]["title"]][userId].append(data)
-                
-                try:
-                    watchdate = data["member"]["watchdate"].split('/')
-                    watchdate = datetime(year=int(watchdate[2]), month=int(watchdate[1]), day=int(watchdate[0]))
-                except Exception as e:
-                    print("No watchdate found for review.")
-                    return
-
-                for i in range(len(self.letterboxdDetails["films"][data["film"]["title"]][userId])):
-                    date = self.letterboxdDetails["films"][data["film"]["title"]][userId][i]["member"]["watchdate"].split('/')
-                    date = datetime(year=int(date[2]), month=int(date[1]), day=int(date[0]))
-                    if watchdate < date:
-                        self.letterboxdDetails["films"][data["film"]["title"]][userId].insert(i, data)
-                        break
-                
-
-            else:
-                print(f"Review already exists in {data['film']['title']} for {user.display_name}")
-                return None
+            print(f"Review already exists in {data['film']['title']} for {user.display_name}")
+            return None
         
 
     # Embed creation
@@ -349,7 +349,8 @@ class letterboxd(commands.Cog):
             raise e
 
         for i in range(len(response)):
-            self.addReviewToFilm(data=response[i], user=user)
+            #self.addReviewToFilm(data=response[i], user=user)
+            pass
         
         self.letterboxdDetails["users"][str(user.id)]["activity"] = response
         with open("letterboxd.json", "w") as f:
@@ -599,7 +600,10 @@ class letterboxdFilmEmbed(discord.Embed):
         print(f"building from {data}")
         self.title = data["film"]["title"]
         self.url = data["member"]["link"]
-        self.rating = float(data["member"]["rating"])
+        try:
+            self.rating = float(data["member"]["rating"])
+        except Exception as e:
+            self.rating = None
         try:
             self.review = data["member"]["review"]
         except Exception as e:
