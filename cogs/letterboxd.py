@@ -574,7 +574,7 @@ class letterboxdFilmEmbed(discord.Embed):
             self.setColour(self.rating)
             self.add_field(name="Rating", value=self.letterboxd.ratingEmojis(self.rating), inline=False)
         else:
-            self.setColour(discord.Color.blurple())
+            self.colour = discord.Color.blurple()
         
         if self.watchDate != None:
             self.add_field(name="Watched", value=self.watchDate, inline=True)
