@@ -349,7 +349,7 @@ class letterboxd(commands.Cog):
             raise e
 
         for i in range(len(response)):
-            #self.addReviewToFilm(data=response[i], user=user)
+            self.addReviewToFilm(data=response[i], user=user)
             pass
         
         self.letterboxdDetails["users"][str(user.id)]["activity"] = response
@@ -469,7 +469,12 @@ class letterboxdFilmWatchUI(discord.ui.View):
         
         self.activity = userActivity[self.count] # activity
         self.film = self.activity["film"] # film details
-        self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["title"]]
+
+        try:
+            self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["title"]]
+        except KeyError:
+            self.letterboxd.addReviewToFilm(data=self.activity, user=self.user)
+            self.reviews = self.letterboxd.letterboxdDetails["films"][self.film["title"]]
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
     async def previous(self, interaction:discord.Interaction, button:discord.ui.Button, ):
