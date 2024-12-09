@@ -123,7 +123,10 @@ class letterboxd(commands.Cog):
         
         if userId not in self.letterboxdDetails["films"][data["film"]["title"]]:
             self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
-        elif userId in self.letterboxdDetails["films"][data["film"]["title"]] and data not in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
+        elif userId in self.letterboxdDetails["films"][data["film"]["title"]]:
+            if data in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
+                print(f"Review already exists in {data['film']['title']} for {user.display_name}")
+                return None
             self.letterboxdDetails["films"][data["film"]["title"]][userId].append(data)
             
             try:
@@ -392,7 +395,7 @@ class letterboxd(commands.Cog):
                         # If the user already has the film in their activity
                         break
                 else:
-                    print(f"{response[filmCount]['member']} not in activity, sending message\n")
+                    print(f"{response[filmCount]} not in activity, sending message\n")
                     member = await self.bot.fetch_user(user)
                     try:
                         self.addReviewToFilm(data=response[filmCount], user=member)
