@@ -124,10 +124,13 @@ class letterboxd(commands.Cog):
         if userId not in self.letterboxdDetails["films"][data["film"]["title"]]:
             self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
         elif userId in self.letterboxdDetails["films"][data["film"]["title"]]:
-            if data in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
-                print(f"Review already exists in {data['film']['title']} for {user.display_name}")
-                return None
+            review = data["member"]
+            for i in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
+                if i["member"] == review:
+                    print(f"Review already exists in {data['film']['title']} for {user.display_name}")
+                    return None
             self.letterboxdDetails["films"][data["film"]["title"]][userId].append(data)
+
             
             try:
                 watchdate = data["member"]["watchdate"].split('/')
