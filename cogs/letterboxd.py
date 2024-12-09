@@ -134,8 +134,12 @@ class letterboxd(commands.Cog):
                 return
 
             for i in range(len(self.letterboxdDetails["films"][data["film"]["title"]][userId])):
-                date = self.letterboxdDetails["films"][data["film"]["title"]][userId][i]["member"]["watchdate"].split('/')
-                date = datetime(year=int(date[2]), month=int(date[1]), day=int(date[0]))
+                try:
+                    date = self.letterboxdDetails["films"][data["film"]["title"]][userId][i]["member"]["watchdate"].split('/')
+                    date = datetime(year=int(date[2]), month=int(date[1]), day=int(date[0]))
+                except Exception as e:
+                    print("No watchdate found for review.")
+                    return
                 if watchdate < date:
                     self.letterboxdDetails["films"][data["film"]["title"]][userId].insert(i, data)
                     break
