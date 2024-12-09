@@ -124,13 +124,13 @@ class letterboxd(commands.Cog):
         if userId not in self.letterboxdDetails["films"][data["film"]["title"]]:
             self.letterboxdDetails["films"][data["film"]["title"]][userId] = [data]
         elif userId in self.letterboxdDetails["films"][data["film"]["title"]]:
-            review = data["member"]
             if type(self.letterboxdDetails["films"][data["film"]["title"]][userId]) != list:
                 self.letterboxdDetails["films"][data["film"]["title"]][userId] = [self.letterboxdDetails["films"][data["film"]["title"]][userId]]
-            if data not in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
-                self.letterboxdDetails["films"][data["film"]["title"]][userId].append(data)
 
-            
+            for i in self.letterboxdDetails["films"][data["film"]["title"]][userId]:
+                if i["member"] == data["member"]:
+                    print(f"Review already exists in {data['film']['title']} for {user.display_name}")
+                    return None
             try:
                 watchdate = data["member"]["watchdate"].split('/')
                 watchdate = datetime(year=int(watchdate[2]), month=int(watchdate[1]), day=int(watchdate[0]))
