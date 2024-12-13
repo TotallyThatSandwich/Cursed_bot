@@ -596,6 +596,8 @@ class letterboxdFilmEmbed(discord.Embed):
         if self.review != None:
             if self.spoiler:
                 self.add_field(name="", value=f"**This review has spoilers. If you want to read the review, click [here]({self.url})**", inline=False)
+            elif len(self.review) > 1024:
+                self.insert_field_at(0, name="", value=f"Read full review [here]({self.url})", inline=False)
             else:
                 paragraphs = self.review.split("\\n")
                 length = len(paragraphs)
@@ -603,12 +605,6 @@ class letterboxdFilmEmbed(discord.Embed):
                 if length > 23:
                     length = 23
                     self.insert_field_at(0, name="", value=f"Read full review [here]({self.url})", inline=False)
-                for i in range(length):
-                    if len(paragraphs[i]) > 1024:
-                        final = paragraphs[i].split()[-1]
-                        paragraphs[i] = " ".join(paragraphs[i].split()[:-1]) # What the fuck? Need to test this, because not sure if :-1 is the same as :1024.
-                        paragraphs[i+1] = final + " " + paragraphs[i+1]
-                    self.add_field(name ="", value=paragraphs[i], inline=False)
 
         self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
         
