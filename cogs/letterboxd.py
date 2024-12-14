@@ -607,7 +607,7 @@ class letterboxdFilmEmbed(discord.Embed):
                     self.insert_field_at(0, name="", value=f"Read full review [here]({self.url})", inline=False)
                 else:
                     for i in range(length):
-                        self.add_field(value=paragraphs[i], inline=False)
+                        self.add_field(name="", value=paragraphs[i], inline=False)
 
         self.set_footer(text="Setup tracking with /letterboxd_login", icon_url=letterboxdLogo)
         
