@@ -105,7 +105,10 @@ class letterboxd(commands.Cog):
         response = requests.get(url=url)
         response = response.json()
 
-        return response[type]
+        try:
+            return response[type]
+        except KeyError:
+            raise KeyError(f"KeyError: {response}")
     
     async def fetchMemberFromId(self, userID:int) -> discord.Member:
         user = await self.bot.fetch_user(userID)
