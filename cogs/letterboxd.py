@@ -5,7 +5,7 @@ import os
 import sys
 
 import json
-import requests
+import aiohttp
 
 import csv
 from zipfile import ZipFile
@@ -102,9 +102,10 @@ class letterboxd(commands.Cog):
         
         print(f"fetching from {url}")
         
-        response = requests.get(url=url)
-        response = response.json()
-
+        response = await aiohttp.ClientSession().get(url=url)
+        if response.status != 200:
+            raise Exception(f"Error fetching data from {url}: {response.status}")
+        response = await response.json()
         try:
             return response[type]
         except KeyError:
@@ -290,9 +291,9 @@ class letterboxd(commands.Cog):
             return await interaction.response.send_message("The user is not signed in for Letterboxd tracking", ephemeral=True)
 
         url = f"{letterboxdURL}/favourites/{self.letterboxdDetails['users'][str(user.id)]['username']}"
-        response = requests.get(url=url)
+        response = await aiohttp.ClientSession().get(url=url)
         try:
-            response = response.json()
+            response = await response.json()
         except Exception as e:
             print(e)
             return await interaction.followup.send("Error fetching data. Please try again later.", ephemeral=True)
@@ -422,8 +423,10 @@ class letterboxd(commands.Cog):
     async def getLast5(self):
         if date.weekday() == 4:
             for user in self.letterboxdDetails["users"]:
-                response = requests.get(url=letterboxdURL)
-                response = response.json()
+                response = aiohttp.ClientSession().get(url=letterboxdURL)
+                if response.status != 200:
+                    raise Exception(f"Error fetching data from {letterboxdURL}: {response.status}")
+                response = await response.json()
         
     def getAllReviews(self, reviews=None, filmName=None) -> list[discord.SelectOption]:
         """
