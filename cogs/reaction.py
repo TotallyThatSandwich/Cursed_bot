@@ -55,7 +55,7 @@ class react(commands.Cog):
             pass
 
         if str(message.author.id) in ["1210389365185056818", "1210512184103403530"] and "Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy." in message.content and "reply" in str(message.type):
-                if random.randint(1,2) == 1:
+                if random.randint(1,10) == 1:
                     await message.reply("Crazy? I was crazy once. They locked me in a room. A rubber room! A rubber room with rats, and rats make me crazy.")
 
         with open("optoutlist.txt", "r") as optoutlist:
