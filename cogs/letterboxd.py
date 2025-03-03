@@ -120,6 +120,9 @@ class letterboxd(commands.Cog):
             userId = user.id
         userId:str = str(userId)
 
+        if data.get("film") == None:
+            return None
+
         if data["film"]["title"] not in self.letterboxdDetails["films"]:
             self.letterboxdDetails["films"].update({data["film"]["title"]: {}})
             self.letterboxdDetails["films"][data["film"]["title"]].update({userId: [data]})
@@ -413,7 +416,8 @@ class letterboxd(commands.Cog):
                         channel = self.bot.get_channel(int(self.letterboxdDetails["chat"]))
                         await channel.send(embed=embed, view=ui)
                     except Exception as e:
-                        raise e
+                        logger.error(e)
+                        continue
                     
 
                     self.letterboxdDetails["users"][user]["activity"].insert(filmCount, response[filmCount])
