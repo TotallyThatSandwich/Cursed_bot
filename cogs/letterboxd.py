@@ -395,11 +395,15 @@ class letterboxd(commands.Cog):
 
             for filmCount in range(len(response)):
                 for activity in self.letterboxdDetails["users"][user]["activity"]:
-                    isSame = response[filmCount]["film"]["title"] == activity["film"]["title"]
-                    if isSame:
-                        print("\n")
+                    try:
+                        isSame = response[filmCount]["film"]["title"] == activity["film"]["title"]
+                        if isSame:
+                            print("\n")
                         # If the user already has the film in their activity
                         break
+                    except Exception as e:
+                        logger.error(e)
+                        continue
                 else:
                     print(f"{response[filmCount]} not in activity, sending message\n")
                     member = await self.bot.fetch_user(user)
